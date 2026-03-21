@@ -6,85 +6,31 @@
 import SwiftUI
 
 struct GridView: View {
-    @Binding var selectedRow: Int?
-    @Binding var selectedCol: Int?
-    let values: [Int?]
+    let game: Game
 
-    private func cellColor(row: Int, col: Int) -> Color {
-        guard let selectedRow, let selectedCol else {
-            return Color(nsColor: .textBackgroundColor)
-        }
-        
-        // Highlight the selected cell
-        if selectedRow == row && selectedCol == col {
-            return Color.accentColor.opacity(0.3)
-        }
-        
-        // Highlight cells with the same digit as the selected cell
-        let selectedValue = cellValue(row: selectedRow, col: selectedCol)
-        let value = cellValue(row: row, col: col)
-        if let selectedValue, let value, selectedValue == value {
-            return Color.accentColor.opacity(0.3)
-        }
-        
-        // Highlight cells in the same row
-        if selectedRow == row {
-            return Color.accentColor.opacity(0.1)
-        }
-        
-        // Highlight cells in the same column
-        if selectedCol == col {
-            return Color.accentColor.opacity(0.1)
-        }
-        
-        // Highlight cells in the same 3x3 block
-        if selectedRow / 3 == row / 3 && selectedCol / 3 == col / 3 {
-            return Color.accentColor.opacity(0.1)
-        }
-        
-        return Color(nsColor: .textBackgroundColor)
-    }
-
-    private func cellValue(row: Int, col: Int) -> Int? {
-        guard let value = values[9 * row + col] else {
-            return nil
-        }
-        
-        return value % 10
-    }
-
-    private func isInitialValue(row: Int, col: Int) -> Bool {
-        guard let value = values[9 * row + col] else {
-            return false
-        }
-        
-        return value > 10
-    }
-    
     var body: some View {
         Grid(horizontalSpacing: 0, verticalSpacing: 0) {
-            ForEach(0..<9) { row in
+            ForEach(0..<9, id: \.self) { row in
                 GridRow {
-                    ForEach(0..<9) { col in
+                    ForEach(0..<9, id: \.self) { col in
                         Rectangle()
                             .fill(cellColor(row: row, col: col))
                             .aspectRatio(1.0, contentMode: .fit)
                             .border(.gray.opacity(0.6), width: 0.5)
                             .overlay {
-                                if let value = cellValue(row: row, col: col) {
-                                    Text("\(value)")
+                                if let digit = game.digit(atRow: row, col: col) {
+                                    Text("\(digit)")
                                         .font(.title2)
                                         .fontWeight(.medium)
                                         .foregroundColor(
-                                            isInitialValue(row: row, col: col)
+                                            game.isClue(atRow: row, col: col)
                                                 ? Color.primary
                                                 : Color.accentColor
                                         )
                                 }
                             }
                             .onTapGesture {
-                                selectedRow = row
-                                selectedCol = col
+                                game.select(row: row, col: col)
                             }
                     }
                 }
@@ -93,44 +39,46 @@ struct GridView: View {
         .overlay {
             Canvas { context, size in
                 let step = size.width / 3
-                
-                // Horizontal lines
-                context.fill(
-                    Path(CGRect(x: 0, y: 0, width: size.width, height: 2)),
-                    with: .color(.primary)
-                )
-                context.fill(
-                    Path(CGRect(x: 0, y: step - 1, width: size.width, height: 2)),
-                    with: .color(.primary)
-                )
-                context.fill(
-                    Path(CGRect(x: 0, y: 2 * step - 1, width: size.width, height: 2)),
-                    with: .color(.primary)
-                )
-                context.fill(
-                    Path(CGRect(x: 0, y: 3 * step - 2, width: size.width, height: 2)),
-                    with: .color(.primary)
-                )
-                
-                // Vertical lines
-                context.fill(
-                    Path(CGRect(x: 0, y: 0, width: 2, height: size.height)),
-                    with: .color(.primary)
-                )
-                context.fill(
-                    Path(CGRect(x: step - 1, y: 0, width: 2, height: size.height)),
-                    with: .color(.primary)
-                )
-                context.fill(
-                    Path(CGRect(x: 2 * step - 1, y: 0, width: 2, height: size.height)),
-                    with: .color(.primary)
-                )
-                context.fill(
-                    Path(CGRect(x: 3 * step - 2, y: 0, width: 2, height: size.height)),
-                    with: .color(.primary)
-                )
+                let lineWidth: CGFloat = 2
+
+                for i in 0...3 {
+                    let offset = CGFloat(i) * step - (i > 2 ? 2 : i > 0 ? 1 : 0)
+                    context.fill(
+                        Path(CGRect(x: offset, y: 0, width: lineWidth, height: size.height)),
+                        with: .color(.primary)
+                    )
+                    context.fill(
+                        Path(CGRect(x: 0, y: offset, width: size.width, height: lineWidth)),
+                        with: .color(.primary)
+                    )
+                }
             }
             .allowsHitTesting(false)
         }
+    }
+
+    private func cellColor(row: Int, col: Int) -> Color {
+        guard let selected = game.selectedCell else { return Color(nsColor: .textBackgroundColor) }
+
+        // Highlight the selected cell
+        if selected.row == row && selected.col == col {
+            return Color.accentColor.opacity(0.3)
+        }
+
+        // Highlight cells with the same digit as the selected cell
+        let selectedDigit = game.digit(atRow: selected.row, col: selected.col)
+        let digit = game.digit(atRow: row, col: col)
+        if let selectedDigit, let digit, selectedDigit == digit {
+            return Color.accentColor.opacity(0.3)
+        }
+
+        // Highlight cells in the same row, column, or 3x3 block
+        if selected.row == row
+            || selected.col == col
+            || (selected.row / 3 == row / 3 && selected.col / 3 == col / 3) {
+            return Color.accentColor.opacity(0.1)
+        }
+
+        return Color(nsColor: .textBackgroundColor)
     }
 }

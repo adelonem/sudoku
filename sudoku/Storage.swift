@@ -1,42 +1,71 @@
 //
-//  PuzzleStorage.swift
+//  Storage.swift
 //  sudoku
 //
 
 import Foundation
 
-class Storage {
-    static func load() -> [Int?]? {
-        guard let url = url() else {
-            return nil
-        }
-        
+enum Storage {
+    private struct RawPuzzle: Decodable {
+        let puzzle: [Int?]
+    }
+    
+    /// Loads the puzzle collection from the bundled puzzles.json file.
+    static func loadPuzzleCollection() -> [Puzzle]? {
+        guard let url = Bundle.main.url(forResource: "puzzles", withExtension: "json") else { return nil }
+
         do {
             let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode([Int?].self, from: data)
+            let raw = try JSONDecoder().decode([RawPuzzle].self, from: data)
+            return raw.map { entry in
+                var puzzle = Puzzle()
+                puzzle.cells = entry.puzzle.map { value in
+                    guard let value else { return .empty }
+                    return .clue(value)
+                }
+                return puzzle
+            }
         } catch {
             print(error)
             return nil
         }
     }
-    
-    static func save (_ values: [Int?]) {
-        guard let url = url() else {
-            return
-        }
-        
+
+    /// Loads the saved game from Application Support.
+    static func load() -> Puzzle? {
+        guard let url = savedPuzzleURL() else { return nil }
+
         do {
-            let data = try JSONEncoder().encode(values)
+            let data = try Data(contentsOf: url)
+            return try JSONDecoder().decode(Puzzle.self, from: data)
+        } catch {
+            print(error)
+            return nil
+        }
+    }
+
+    /// Saves the current game to Application Support.
+    static func save(_ puzzle: Puzzle) {
+        guard let url = savedPuzzleURL() else { return }
+
+        do {
+            let data = try JSONEncoder().encode(puzzle)
             try data.write(to: url)
         } catch {
             print(error)
         }
     }
-    
-    static func url() -> URL? {
+
+    /// Returns the URL of puzzle.json in Application Support.
+    private static func savedPuzzleURL() -> URL? {
         do {
-            let directory = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            return directory.appendingPathComponent("puzzle.json")
+            let directory = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+            return directory.appending(path: "puzzle.json")
         } catch {
             print(error)
             return nil
