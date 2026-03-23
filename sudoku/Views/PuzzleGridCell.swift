@@ -16,15 +16,21 @@ struct PuzzleGridCell: View {
                 GridRow {
                     ForEach(0..<Puzzle.blockSize, id: \.self) { col in
                         let number = row * Puzzle.blockSize + col + 1
+                        let isHighlighted = highlightedDigit == number && notes.contains(number)
                         Text(notes.contains(number) ? "\(number)" : " ")
                             .font(.caption2)
-                            .fontWeight(highlightedDigit == number ? .bold : .regular)
+                            .fontWeight(isHighlighted ? .bold : .regular)
                             .foregroundStyle(
-                                highlightedDigit == number
+                                isHighlighted
                                 ? Color.accentColor
                                 : Color.secondary
                             )
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(
+                                isHighlighted
+                                ? Color.accentColor.opacity(0.2)
+                                : Color.clear
+                            )
                     }
                 }
             }

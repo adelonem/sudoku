@@ -75,14 +75,11 @@ struct PuzzleGrid: View {
             return Color.accentColor.opacity(0.3)
         }
         
-        // Highlight cells with the same digit as the selected cell (including notes)
+        // Highlight cells with the same digit as the selected cell
         if let selectedDigit {
             let digit = game.digit(atRow: row, col: col)
             if let digit, selectedDigit == digit {
                 return Color.accentColor.opacity(0.3)
-            }
-            if game.notes(atRow: row, col: col).contains(selectedDigit) {
-                return Color.accentColor.opacity(0.2)
             }
         }
         
