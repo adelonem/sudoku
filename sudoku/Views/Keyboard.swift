@@ -46,6 +46,13 @@ struct Keyboard: View {
             }
             
             GridRow {
+                KeyboardActionButton(
+                    icon: "delete.backward",
+                    tint: .red
+                ) {
+                    game.deleteCell()
+                }
+                
                 Button {
                     showNewGameConfirmation = true
                 } label: {
@@ -53,11 +60,11 @@ struct Keyboard: View {
                         .font(.callout)
                         .fontWeight(.medium)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .aspectRatio(3.0, contentMode: .fit)
+                        .aspectRatio(2.0, contentMode: .fit)
                         .background(RoundedRectangle(cornerRadius: 8).fill(.blue.opacity(0.15)))
                 }
                 .buttonStyle(.plain)
-                .gridCellColumns(Puzzle.blockSize)
+                .gridCellColumns(Puzzle.blockSize - 1)
                 .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
                     Button("New Game") {
                         game.newGame()

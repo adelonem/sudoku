@@ -72,6 +72,8 @@ class Game {
     func enterDigit(_ number: Int?) {
         guard let cell = selectedCell else { return }
         guard !puzzle[cell].isClue else { return }
+        // Block modification of cells that already contain a user-entered digit (use deleteCell to clear first)
+        if case .userEntry = puzzle[cell] { return }
         
         if isNoteMode {
             guard let number else {
@@ -84,12 +86,21 @@ class Game {
             puzzle[cell] = current.isEmpty ? .empty : .notes(current)
         } else {
             if let number {
-                puzzle[cell] = puzzle[cell].digit == number ? .empty : .userEntry(number)
+                puzzle[cell] = .userEntry(number)
             } else {
                 puzzle[cell] = .empty
             }
             refreshNotes()
         }
+        saveInBackground()
+    }
+    
+    /// Deletes the content of the currently selected cell (digit and notes), then saves.
+    func deleteCell() {
+        guard let cell = selectedCell else { return }
+        guard !puzzle[cell].isClue else { return }
+        puzzle[cell] = .empty
+        refreshNotes()
         saveInBackground()
     }
     
