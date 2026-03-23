@@ -21,7 +21,7 @@ struct PuzzleGrid: View {
                                 let cellNotes = game.notes(atRow: row, col: col)
                                 if let digit = game.digit(atRow: row, col: col) {
                                     Text("\(digit)")
-                                        .font(.title2)
+                                        .font(.title)
                                         .fontWeight(.medium)
                                         .foregroundStyle(
                                             game.isClue(atRow: row, col: col)

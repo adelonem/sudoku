@@ -18,7 +18,7 @@ struct PuzzleGridCell: View {
                         let number = row * Puzzle.blockSize + col + 1
                         let isHighlighted = highlightedDigit == number && notes.contains(number)
                         Text(notes.contains(number) ? "\(number)" : " ")
-                            .font(.caption2)
+                            .font(.callout)
                             .fontWeight(isHighlighted ? .bold : .regular)
                             .foregroundStyle(
                                 isHighlighted
