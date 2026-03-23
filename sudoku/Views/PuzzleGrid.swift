@@ -49,10 +49,9 @@ struct PuzzleGrid: View {
         }
     }
     
-    /// The digit of the currently selected cell (used for highlighting).
+    /// The digit to highlight across the grid, driven by the last user action.
     private var selectedDigit: Int? {
-        guard let selected = game.selectedCell else { return nil }
-        return game.digit(atRow: selected.row, col: selected.col)
+        game.highlightedDigit
     }
     
     private static let defaultCellColor: Color = {
@@ -68,19 +67,16 @@ struct PuzzleGrid: View {
             return .red.opacity(0.15)
         }
         
+        // Highlight cells whose digit matches the active highlighted digit
+        if let selectedDigit, let digit = game.digit(atRow: row, col: col), selectedDigit == digit {
+            return Color.accentColor.opacity(0.3)
+        }
+        
         guard let selected = game.selectedCell else { return Self.defaultCellColor }
         
         // Highlight the selected cell
         if selected.row == row && selected.col == col {
             return Color.accentColor.opacity(0.3)
-        }
-        
-        // Highlight cells with the same digit as the selected cell
-        if let selectedDigit {
-            let digit = game.digit(atRow: row, col: col)
-            if let digit, selectedDigit == digit {
-                return Color.accentColor.opacity(0.3)
-            }
         }
         
         // Highlight cells in the same row, column, or 3×3 block

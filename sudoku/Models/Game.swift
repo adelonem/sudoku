@@ -8,6 +8,8 @@ import Observation
 @Observable
 class Game {
     private(set) var digitFirstDigit: Int?
+    /// The digit to highlight across the grid, driven by the most recent user action.
+    private(set) var highlightedDigit: Int?
     private(set) var isNoteMode = false
     private(set) var isLoading = false
     private(set) var isSaving = false
@@ -53,8 +55,10 @@ class Game {
     func toggleDigitFirst(_ digit: Int? = nil) {
         if let digit, digitFirstDigit != digit {
             digitFirstDigit = digit
+            highlightedDigit = digit
         } else {
             digitFirstDigit = nil
+            highlightedDigit = nil
         }
     }
     
@@ -66,6 +70,8 @@ class Game {
         if digitFirstDigit != nil {
             enterDigit(digitFirstDigit)
         }
+        // The selected cell's digit takes priority for highlighting
+        highlightedDigit = puzzle[row, col].digit ?? digitFirstDigit
     }
     
     /// Enters or toggles a digit (or note) in the currently selected cell, then saves.
@@ -78,17 +84,22 @@ class Game {
         if isNoteMode {
             guard let number else {
                 puzzle[cell] = .empty
+                highlightedDigit = nil
                 saveInBackground()
                 return
             }
             var current = puzzle[cell].cellNotes
+            let isAdding = !current.contains(number)
             current.formSymmetricDifference([number])
             puzzle[cell] = current.isEmpty ? .empty : .notes(current)
+            highlightedDigit = isAdding ? number : nil
         } else {
             if let number {
                 puzzle[cell] = .userEntry(number)
+                highlightedDigit = number
             } else {
                 puzzle[cell] = .empty
+                highlightedDigit = nil
             }
             refreshNotes()
         }
@@ -125,6 +136,7 @@ class Game {
         selectedCell = nil
         isNoteMode = false
         digitFirstDigit = nil
+        highlightedDigit = nil
         saveInBackground()
     }
     

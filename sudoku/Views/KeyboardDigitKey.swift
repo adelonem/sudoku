@@ -18,7 +18,9 @@ struct KeyboardDigitKey: View {
     var body: some View {
         Button {
             if game.digitFirstDigit != nil {
-                game.toggleDigitFirst(number)
+                if game.digitFirstDigit != number {
+                    game.toggleDigitFirst(number)
+                }
             } else {
                 game.enterDigit(number)
             }

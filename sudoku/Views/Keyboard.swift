@@ -26,7 +26,11 @@ struct Keyboard: View {
                     isActive: game.digitFirstDigit != nil,
                     tint: .purple
                 ) {
-                    game.toggleDigitFirst(1)
+                    if game.digitFirstDigit != nil {
+                        game.toggleDigitFirst()
+                    } else {
+                        game.toggleDigitFirst(1)
+                    }
                 }
                 
                 KeyboardActionButton(
