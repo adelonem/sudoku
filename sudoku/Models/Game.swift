@@ -5,10 +5,16 @@
 
 import Observation
 
+/// Represents the locked action applied on each cell tap.
+enum LockedAction: Equatable {
+    case digit(Int)
+    case erase
+}
+
 @Observable
 class Game {
-    private(set) var digitFirstDigit: Int?
-    /// The digit to highlight across the grid, driven by the most recent user action.
+    private(set) var isLockedMode = false
+    private(set) var lockedAction: LockedAction?
     private(set) var highlightedDigit: Int?
     private(set) var isNoteMode = false
     private(set) var isLoading = false
@@ -58,27 +64,49 @@ class Game {
         isNoteMode.toggle()
     }
     
-    /// Toggles digit-first mode. If `digit` is already active, deactivates the mode.
-    func toggleDigitFirst(_ digit: Int? = nil) {
-        if let digit, digitFirstDigit != digit {
-            digitFirstDigit = digit
-            highlightedDigit = digit
-        } else {
-            digitFirstDigit = nil
+    /// Toggles the locked mode on or off when called without an action.
+    /// When called with an action, sets or toggles it within the locked mode.
+    func toggleLockedAction(_ action: LockedAction? = nil) {
+        guard let action else {
+            // No action provided: toggle the entire mode
+            isLockedMode.toggle()
+            if !isLockedMode {
+                lockedAction = nil
+                highlightedDigit = nil
+            }
+            return
+        }
+        // An action was provided: activate the mode and set/toggle the action
+        isLockedMode = true
+        if lockedAction == action {
+            lockedAction = nil
             highlightedDigit = nil
+        } else {
+            lockedAction = action
+            if case .digit(let d) = action {
+                highlightedDigit = d
+            } else {
+                highlightedDigit = nil
+            }
         }
     }
     
     // MARK: - Actions
     
-    /// Selects a cell on the board. In digit-first mode, also places the active digit.
+    /// Selects a cell on the board. When a locked action is set, also applies it to the cell.
     func select(row: Int, col: Int) {
         selectedCell = CellPosition(row: row, col: col)
-        if digitFirstDigit != nil {
-            enterDigit(digitFirstDigit)
+        switch lockedAction {
+        case .digit(let d):
+            enterDigit(d)
+        case .erase:
+            deleteCell()
+        case nil:
+            break
         }
         // The selected cell's digit takes priority for highlighting
-        highlightedDigit = puzzle[row, col].digit ?? digitFirstDigit
+        let activeDigit: Int? = if case .digit(let d) = lockedAction { d } else { nil }
+        highlightedDigit = puzzle[row, col].digit ?? activeDigit
     }
     
     /// Enters or toggles a digit (or note) in the currently selected cell, then saves.
@@ -142,7 +170,8 @@ class Game {
         puzzle = candidates.randomElement() ?? collection.randomElement() ?? Puzzle()
         selectedCell = nil
         isNoteMode = false
-        digitFirstDigit = nil
+        isLockedMode = false
+        lockedAction = nil
         highlightedDigit = nil
         saveInBackground()
     }

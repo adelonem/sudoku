@@ -15,22 +15,18 @@ struct Keyboard: View {
                 GridRow {
                     ForEach(0..<Puzzle.blockSize, id: \.self) { j in
                         let number = Puzzle.blockSize * i + j + 1
-                        KeyboardDigitKey(number: number, game: game)
+                        KeyboardKey(number: number, game: game)
                     }
                 }
             }
             
             GridRow {
                 KeyboardActionButton(
-                    icon: game.digitFirstDigit != nil ? "hand.tap.fill" : "hand.tap",
-                    isActive: game.digitFirstDigit != nil,
+                    icon: game.isLockedMode ? "hand.tap.fill" : "hand.tap",
+                    isActive: game.isLockedMode,
                     tint: .purple
                 ) {
-                    if game.digitFirstDigit != nil {
-                        game.toggleDigitFirst()
-                    } else {
-                        game.toggleDigitFirst(1)
-                    }
+                    game.toggleLockedAction()
                 }
                 
                 KeyboardActionButton(
@@ -42,19 +38,24 @@ struct Keyboard: View {
                 }
                 
                 KeyboardActionButton(
-                    icon: "wand.and.stars",
-                    tint: .green
+                    icon: "delete.backward",
+                    isActive: game.lockedAction == .erase,
+                    tint: .red
                 ) {
-                    game.fillAllNotes()
+                    if game.isLockedMode {
+                        game.toggleLockedAction(.erase)
+                    } else {
+                        game.deleteCell()
+                    }
                 }
             }
             
             GridRow {
                 KeyboardActionButton(
-                    icon: "delete.backward",
-                    tint: .red
+                    icon: "wand.and.stars",
+                    tint: .green
                 ) {
-                    game.deleteCell()
+                    game.fillAllNotes()
                 }
                 
                 Button {

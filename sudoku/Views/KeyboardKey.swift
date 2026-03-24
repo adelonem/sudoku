@@ -1,18 +1,17 @@
 //
-//  KeyboardDigitKey.swift
+//  KeyboardKey.swift
 //  sudoku
 //
 
 import SwiftUI
 
-/// A digit key that enters the number on tap.
-/// In digit-first mode, tap selects the active digit instead.
-struct KeyboardDigitKey: View {
+/// A key that enters a digit on tap, or selects it as the locked action.
+struct KeyboardKey: View {
     let number: Int
     let game: Game
     
     private var isActive: Bool {
-        game.digitFirstDigit == number
+        game.lockedAction == .digit(number)
     }
     
     private var remaining: Int {
@@ -25,10 +24,8 @@ struct KeyboardDigitKey: View {
     
     var body: some View {
         Button {
-            if game.digitFirstDigit != nil {
-                if game.digitFirstDigit != number {
-                    game.toggleDigitFirst(number)
-                }
+            if game.isLockedMode {
+                game.toggleLockedAction(.digit(number))
             } else {
                 game.enterDigit(number)
             }
