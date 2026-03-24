@@ -44,6 +44,13 @@ class Game {
         PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle)
     }
     
+    /// Returns how many more times the given digit (1-9) needs to be placed.
+    /// In a solved Sudoku each digit appears exactly 9 times.
+    func remainingCount(for digit: Int) -> Int {
+        let placed = puzzle.cells.filter { $0.digit == digit }.count
+        return max(0, Puzzle.size - placed)
+    }
+    
     // MARK: - Mode toggles
     
     /// Toggles note-entry mode on or off.

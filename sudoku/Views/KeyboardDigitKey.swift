@@ -15,6 +15,14 @@ struct KeyboardDigitKey: View {
         game.digitFirstDigit == number
     }
     
+    private var remaining: Int {
+        game.remainingCount(for: number)
+    }
+    
+    private var isExhausted: Bool {
+        remaining == 0
+    }
+    
     var body: some View {
         Button {
             if game.digitFirstDigit != nil {
@@ -25,17 +33,26 @@ struct KeyboardDigitKey: View {
                 game.enterDigit(number)
             }
         } label: {
-            Text("\(number)")
-                .font(.title2)
-                .fontWeight(.medium)
-                .foregroundStyle(game.isNoteMode ? Color.orange : Color.primary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .aspectRatio(1.0, contentMode: .fit)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.gray.opacity(isActive ? 0.4 : 0.15))
-                )
+            VStack(spacing: 0) {
+                Text("\(number)")
+                    .font(.title2)
+                    .fontWeight(.medium)
+                Text("(\(remaining))")
+                    .font(.caption2)
+                    .fontWeight(.regular)
+            }
+            .foregroundStyle(
+                isExhausted ? Color.gray.opacity(0.4) :
+                    game.isNoteMode ? Color.orange : Color.primary
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .aspectRatio(1.0, contentMode: .fit)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.gray.opacity(isActive ? 0.4 : 0.15))
+            )
         }
         .buttonStyle(.plain)
+        .disabled(isExhausted)
     }
 }
