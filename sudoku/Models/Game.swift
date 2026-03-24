@@ -22,6 +22,12 @@ class Game {
     private(set) var puzzle = Puzzle()
     private(set) var selectedCell: CellPosition?
     
+    /// Stack of previous puzzle states for undo support.
+    private var undoStack: [Puzzle] = []
+    
+    /// Whether there is at least one action that can be undone.
+    var canUndo: Bool { !undoStack.isEmpty }
+    
     /// The current puzzle number, if any.
     var puzzleNumber: Int? { puzzle.number }
     
@@ -116,6 +122,8 @@ class Game {
         // Block modification of cells that already contain a user-entered digit (use deleteCell to clear first)
         if case .userEntry = puzzle[cell] { return }
         
+        pushUndo()
+        
         if isNoteMode {
             guard let number else {
                 puzzle[cell] = .empty
@@ -145,6 +153,7 @@ class Game {
     func deleteCell() {
         guard let cell = selectedCell else { return }
         guard !puzzle[cell].isClue else { return }
+        pushUndo()
         puzzle[cell] = .empty
         refreshNotes()
         saveInBackground()
@@ -152,6 +161,7 @@ class Game {
     
     /// Fills all empty cells' notes with valid candidates based on the current grid state.
     func fillAllNotes() {
+        pushUndo()
         for row in 0..<Puzzle.size {
             for col in 0..<Puzzle.size {
                 guard puzzle[row, col].digit == nil else { continue }
@@ -173,6 +183,7 @@ class Game {
         isLockedMode = false
         lockedAction = nil
         highlightedDigit = nil
+        undoStack.removeAll()
         saveInBackground()
     }
     
@@ -190,7 +201,25 @@ class Game {
         }
     }
     
+    /// Reverts the puzzle to the state before the last action.
+    func undo() {
+        guard let previous = undoStack.popLast() else { return }
+        puzzle = previous
+        // Update highlighted digit based on the selected cell after undo
+        if let cell = selectedCell {
+            highlightedDigit = puzzle[cell].digit
+        } else {
+            highlightedDigit = nil
+        }
+        saveInBackground()
+    }
+    
     // MARK: - Private helpers
+    
+    /// Saves the current puzzle state onto the undo stack.
+    private func pushUndo() {
+        undoStack.append(puzzle)
+    }
     
     /// Removes invalidated digits from existing notes based on the current grid state.
     /// Only removes digits that are no longer valid candidates — never adds new ones.

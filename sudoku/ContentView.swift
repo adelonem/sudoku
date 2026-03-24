@@ -14,14 +14,28 @@ struct ContentView: View {
                 .layoutPriority(1)
             
             VStack(spacing: 8) {
-                if let number = game.puzzleNumber {
-                    Text("Puzzle #\(number)")
-                        .font(.headline)
-                }
-                if let difficulty = game.puzzleDifficulty {
-                    Text(difficulty.capitalized)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                HStack(alignment: .center, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let number = game.puzzleNumber {
+                            Text("Puzzle #\(number)")
+                                .font(.headline)
+                        }
+                        if let difficulty = game.puzzleDifficulty {
+                            Text(difficulty.capitalized)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    
+                    Button {
+                        game.undo()
+                    } label: {
+                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(game.canUndo ? .blue : .gray.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!game.canUndo)
                 }
                 
                 Keyboard(game: game)
