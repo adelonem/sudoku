@@ -25,7 +25,7 @@ struct KeyboardKey: View {
     var body: some View {
         Button {
             if game.isLockedMode {
-                game.toggleLockedAction(.digit(number))
+                game.setLockedAction(.digit(number))
             } else {
                 game.enterDigit(number)
             }

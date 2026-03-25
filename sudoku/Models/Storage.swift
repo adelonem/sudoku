@@ -13,66 +13,58 @@ enum Storage {
     }
     
     /// Loads the puzzle collection from the bundled puzzles.json file (synchronous, bundle access).
-    static func loadPuzzleCollection() -> [Puzzle]? {
-        guard let url = Bundle.main.url(forResource: "puzzles", withExtension: "json") else { return nil }
+    static func loadPuzzleCollection() throws -> [Puzzle] {
+        guard let url = Bundle.main.url(forResource: "puzzles", withExtension: "json") else {
+            throw StorageError.missingResource("puzzles.json")
+        }
         
-        do {
-            let data = try Data(contentsOf: url)
-            let raw = try JSONDecoder().decode([RawPuzzle].self, from: data)
-            return raw.map { entry in
-                var puzzle = Puzzle()
-                puzzle.number = entry.number
-                puzzle.difficulty = entry.difficulty
-                puzzle.cells = entry.puzzle.map { value in
-                    guard let value else { return .empty }
-                    return .clue(value)
-                }
-                return puzzle
+        let data = try Data(contentsOf: url)
+        let raw = try JSONDecoder().decode([RawPuzzle].self, from: data)
+        return raw.map { entry in
+            var puzzle = Puzzle()
+            puzzle.number = entry.number
+            puzzle.difficulty = entry.difficulty
+            puzzle.cells = entry.puzzle.map { value in
+                guard let value else { return .empty }
+                return .clue(value)
             }
-        } catch {
-            print(error)
-            return nil
+            return puzzle
         }
     }
     
-    /// Loads the saved game from Application Support asynchronously.
-    static func load() async -> Puzzle? {
-        guard let url = savedPuzzleURL() else { return nil }
-        
-        do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(Puzzle.self, from: data)
-        } catch {
-            print(error)
-            return nil
-        }
+    /// Loads the saved game from Application Support.
+    static func load() throws -> Puzzle {
+        let url = try savedPuzzleURL()
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(Puzzle.self, from: data)
     }
     
-    /// Saves the current game to Application Support asynchronously.
-    static func save(_ puzzle: Puzzle) async {
-        guard let url = savedPuzzleURL() else { return }
-        
-        do {
-            let data = try JSONEncoder().encode(puzzle)
-            try data.write(to: url)
-        } catch {
-            print(error)
-        }
+    /// Saves the current game to Application Support.
+    static func save(_ puzzle: Puzzle) throws {
+        let url = try savedPuzzleURL()
+        let data = try JSONEncoder().encode(puzzle)
+        try data.write(to: url)
     }
     
     /// Returns the URL of puzzle.json in Application Support.
-    private static func savedPuzzleURL() -> URL? {
-        do {
-            let directory = try FileManager.default.url(
-                for: .applicationSupportDirectory,
-                in: .userDomainMask,
-                appropriateFor: nil,
-                create: true
-            )
-            return directory.appending(path: "puzzle.json")
-        } catch {
-            print(error)
-            return nil
+    private static func savedPuzzleURL() throws -> URL {
+        let directory = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        return directory.appending(path: "puzzle.json")
+    }
+}
+
+enum StorageError: LocalizedError {
+    case missingResource(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .missingResource(let name):
+            return "Missing bundled resource: \(name)"
         }
     }
 }

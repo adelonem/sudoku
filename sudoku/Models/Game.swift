@@ -3,6 +3,7 @@
 //  sudoku
 //
 
+import Foundation
 import Observation
 
 /// Represents the locked action applied on each cell tap.
@@ -11,7 +12,7 @@ enum LockedAction: Equatable {
     case erase
 }
 
-@Observable
+@MainActor @Observable
 class Game {
     private(set) var isLockedMode = false
     private(set) var lockedAction: LockedAction?
@@ -19,11 +20,16 @@ class Game {
     private(set) var isNoteMode = false
     private(set) var isLoading = false
     private(set) var isSaving = false
+    private(set) var lastError: String?
     private(set) var puzzle = Puzzle()
     private(set) var selectedCell: CellPosition?
     
     /// Stack of previous puzzle states for undo support.
+    private static let maxUndoDepth = 1000
     private var undoStack: [Puzzle] = []
+    
+    /// Cached count of each placed digit (1-9). Updated after every puzzle mutation.
+    private var digitCounts: [Int: Int] = [:]
     
     /// Whether there is at least one action that can be undone.
     var canUndo: Bool { !undoStack.isEmpty }
@@ -36,11 +42,9 @@ class Game {
     
     /// Whether the puzzle is solved: every cell is filled and there are no conflicts.
     var isSolved: Bool {
-        for index in puzzle.cells.indices {
-            guard puzzle.cells[index].digit != nil else { return false }
-        }
         for row in 0..<Puzzle.size {
             for col in 0..<Puzzle.size {
+                guard puzzle[row, col].digit != nil else { return false }
                 if PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle) {
                     return false
                 }
@@ -74,8 +78,7 @@ class Game {
     /// Returns how many more times the given digit (1-9) needs to be placed.
     /// In a solved Sudoku each digit appears exactly 9 times.
     func remainingCount(for digit: Int) -> Int {
-        let placed = puzzle.cells.filter { $0.digit == digit }.count
-        return max(0, Puzzle.size - placed)
+        max(0, Puzzle.size - (digitCounts[digit] ?? 0))
     }
     
     // MARK: - Mode toggles
@@ -85,19 +88,17 @@ class Game {
         isNoteMode.toggle()
     }
     
-    /// Toggles the locked mode on or off when called without an action.
-    /// When called with an action, sets or toggles it within the locked mode.
-    func toggleLockedAction(_ action: LockedAction? = nil) {
-        guard let action else {
-            // No action provided: toggle the entire mode
-            isLockedMode.toggle()
-            if !isLockedMode {
-                lockedAction = nil
-                highlightedDigit = nil
-            }
-            return
+    /// Toggles the locked mode on or off, clearing any active action when turning off.
+    func toggleLockedMode() {
+        isLockedMode.toggle()
+        if !isLockedMode {
+            lockedAction = nil
+            highlightedDigit = nil
         }
-        // An action was provided: activate the mode and set/toggle the action
+    }
+    
+    /// Sets or toggles a specific locked action. Activates locked mode if not already on.
+    func setLockedAction(_ action: LockedAction) {
         isLockedMode = true
         if lockedAction == action {
             lockedAction = nil
@@ -190,9 +191,14 @@ class Game {
     
     /// Loads a random puzzle from the collection (different from the current one) and saves it.
     func newGame() {
-        let collection = Storage.loadPuzzleCollection() ?? []
-        let candidates = collection.filter { $0.number != puzzle.number }
-        puzzle = candidates.randomElement() ?? collection.randomElement() ?? Puzzle()
+        do {
+            let collection = try Storage.loadPuzzleCollection()
+            let candidates = collection.filter { $0.number != puzzle.number }
+            puzzle = candidates.randomElement() ?? collection.randomElement() ?? Puzzle()
+        } catch {
+            lastError = error.localizedDescription
+            puzzle = Puzzle()
+        }
         selectedCell = nil
         isNoteMode = false
         isLockedMode = false
@@ -205,15 +211,13 @@ class Game {
     /// Restores a previously saved puzzle from persistent storage.
     func load() {
         isLoading = true
-        Task {
-            let saved = await Storage.load()
-            await MainActor.run {
-                if let saved {
-                    puzzle = saved
-                }
-                isLoading = false
-            }
+        do {
+            puzzle = try Storage.load()
+        } catch {
+            // No saved game found — this is expected on first launch.
         }
+        recomputeDigitCounts()
+        isLoading = false
     }
     
     /// Reverts the puzzle to the state before the last action.
@@ -231,9 +235,23 @@ class Game {
     
     // MARK: - Private helpers
     
-    /// Saves the current puzzle state onto the undo stack.
+    /// Saves the current puzzle state onto the undo stack, dropping the oldest entry if needed.
     private func pushUndo() {
+        if undoStack.count >= Self.maxUndoDepth {
+            undoStack.removeFirst()
+        }
         undoStack.append(puzzle)
+    }
+    
+    /// Recomputes the cached digit placement counts from the current grid.
+    private func recomputeDigitCounts() {
+        var counts: [Int: Int] = [:]
+        for cell in puzzle.cells {
+            if let d = cell.digit {
+                counts[d, default: 0] += 1
+            }
+        }
+        digitCounts = counts
     }
     
     /// Removes invalidated digits from existing notes based on the current grid state.
@@ -250,15 +268,15 @@ class Game {
         }
     }
     
-    /// Saves the puzzle asynchronously, updating `isSaving` while in progress.
+    /// Saves the puzzle, updating `isSaving` while in progress.
     private func saveInBackground() {
-        let snapshot = puzzle
+        recomputeDigitCounts()
         isSaving = true
-        Task {
-            await Storage.save(snapshot)
-            await MainActor.run {
-                isSaving = false
-            }
+        do {
+            try Storage.save(puzzle)
+        } catch {
+            lastError = error.localizedDescription
         }
+        isSaving = false
     }
 }

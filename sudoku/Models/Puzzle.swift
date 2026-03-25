@@ -31,27 +31,39 @@ struct Puzzle: Codable {
         set { self[position.row, position.col] = newValue }
     }
     
-    /// Returns the indices of all cells sharing a row, column, or 3×3 block with (`row`, `col`), excluding the cell itself.
-    static func peerIndices(ofRow row: Int, col: Int) -> Set<Int> {
-        var result: Set<Int> = []
-        let selfIndex = row * size + col
-        
-        // Same row
-        for c in 0..<size { result.insert(row * size + c) }
-        
-        // Same column
-        for r in 0..<size { result.insert(r * size + col) }
-        
-        // Same block
-        let blockRow = (row / blockSize) * blockSize
-        let blockCol = (col / blockSize) * blockSize
-        for r in blockRow..<blockRow + blockSize {
-            for c in blockCol..<blockCol + blockSize {
-                result.insert(r * size + c)
+    /// Pre-computed peer indices for every cell, indexed by `row * size + col`.
+    private static let peerIndicesCache: [Set<Int>] = {
+        var cache: [Set<Int>] = []
+        cache.reserveCapacity(size * size)
+        for row in 0..<size {
+            for col in 0..<size {
+                var result: Set<Int> = []
+                let selfIndex = row * size + col
+                
+                // Same row
+                for c in 0..<size { result.insert(row * size + c) }
+                
+                // Same column
+                for r in 0..<size { result.insert(r * size + col) }
+                
+                // Same block
+                let blockRow = (row / blockSize) * blockSize
+                let blockCol = (col / blockSize) * blockSize
+                for r in blockRow..<blockRow + blockSize {
+                    for c in blockCol..<blockCol + blockSize {
+                        result.insert(r * size + c)
+                    }
+                }
+                
+                result.remove(selfIndex)
+                cache.append(result)
             }
         }
-        
-        result.remove(selfIndex)
-        return result
+        return cache
+    }()
+    
+    /// Returns the indices of all cells sharing a row, column, or 3×3 block with (`row`, `col`), excluding the cell itself.
+    static func peerIndices(ofRow row: Int, col: Int) -> Set<Int> {
+        peerIndicesCache[row * size + col]
     }
 }

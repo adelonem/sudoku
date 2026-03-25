@@ -54,13 +54,7 @@ struct PuzzleGrid: View {
         game.highlightedDigit
     }
     
-    private static let defaultCellColor: Color = {
-#if os(macOS)
-        Color(nsColor: .textBackgroundColor)
-#else
-        Color(.systemBackground)
-#endif
-    }()
+    private static let defaultCellColor: Color = .platformBackground
     
     private func cellColor(row: Int, col: Int) -> Color {
         if game.hasConflict(atRow: row, col: col) {
@@ -89,4 +83,15 @@ struct PuzzleGrid: View {
         
         return Self.defaultCellColor
     }
+}
+
+extension Color {
+    /// The platform-appropriate opaque background color.
+    static let platformBackground: Color = {
+#if os(macOS)
+        Color(nsColor: .textBackgroundColor)
+#else
+        Color(.systemBackground)
+#endif
+    }()
 }

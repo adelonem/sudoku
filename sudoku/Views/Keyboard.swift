@@ -33,55 +33,11 @@ struct Keyboard: View {
             }
             
             HStack(spacing: 4) {
-                KeyboardActionButton(
-                    icon: game.isLockedMode ? "hand.tap.fill" : "hand.tap",
-                    isActive: game.isLockedMode,
-                    tint: .purple
-                ) {
-                    game.toggleLockedAction()
-                }
-                
-                KeyboardActionButton(
-                    icon: game.isNoteMode ? "pencil.circle.fill" : "pencil.circle",
-                    isActive: game.isNoteMode,
-                    tint: .orange
-                ) {
-                    game.toggleNoteMode()
-                }
-                
-                KeyboardActionButton(
-                    icon: "delete.backward",
-                    isActive: game.lockedAction == .erase,
-                    tint: .red
-                ) {
-                    if game.isLockedMode {
-                        game.toggleLockedAction(.erase)
-                    } else {
-                        game.deleteCell()
-                    }
-                }
-                
-                KeyboardActionButton(
-                    icon: "wand.and.stars",
-                    tint: .green
-                ) {
-                    game.fillAllNotes()
-                }
-                
-                KeyboardActionButton(
-                    icon: "arrow.counterclockwise",
-                    tint: .blue
-                ) {
-                    showNewGameConfirmation = true
-                }
-                .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
-                    Button("New Game") {
-                        game.newGame()
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("Your current progress will be lost.")
-                }
+                lockButton
+                noteButton
+                eraseButton
+                fillNotesButton()
+                newGameButton()
             }
         }
     }
@@ -100,33 +56,9 @@ struct Keyboard: View {
             }
             
             HStack(spacing: 4) {
-                KeyboardActionButton(
-                    icon: game.isLockedMode ? "hand.tap.fill" : "hand.tap",
-                    isActive: game.isLockedMode,
-                    tint: .purple
-                ) {
-                    game.toggleLockedAction()
-                }
-                
-                KeyboardActionButton(
-                    icon: game.isNoteMode ? "pencil.circle.fill" : "pencil.circle",
-                    isActive: game.isNoteMode,
-                    tint: .orange
-                ) {
-                    game.toggleNoteMode()
-                }
-                
-                KeyboardActionButton(
-                    icon: "delete.backward",
-                    isActive: game.lockedAction == .erase,
-                    tint: .red
-                ) {
-                    if game.isLockedMode {
-                        game.toggleLockedAction(.erase)
-                    } else {
-                        game.deleteCell()
-                    }
-                }
+                lockButton
+                noteButton
+                eraseButton
             }
             .onGeometryChange(for: CGSize.self) { proxy in
                 proxy.size
@@ -136,31 +68,74 @@ struct Keyboard: View {
             }
             
             HStack(spacing: 4) {
-                KeyboardActionButton(
-                    icon: "wand.and.stars",
-                    tint: .green,
-                    square: false
-                ) {
-                    game.fillAllNotes()
-                }
-                
-                KeyboardActionButton(
-                    icon: "arrow.counterclockwise",
-                    tint: .blue,
-                    square: false
-                ) {
-                    showNewGameConfirmation = true
-                }
-                .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
-                    Button("New Game") {
-                        game.newGame()
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("Your current progress will be lost.")
-                }
+                fillNotesButton(square: false)
+                newGameButton(square: false)
             }
             .frame(maxWidth: keyboardWidth, maxHeight: rowHeight)
+        }
+    }
+    
+    // MARK: - Shared action buttons
+    
+    private var lockButton: some View {
+        KeyboardActionButton(
+            icon: game.isLockedMode ? "hand.tap.fill" : "hand.tap",
+            isActive: game.isLockedMode,
+            tint: .purple
+        ) {
+            game.toggleLockedMode()
+        }
+    }
+    
+    private var noteButton: some View {
+        KeyboardActionButton(
+            icon: game.isNoteMode ? "pencil.circle.fill" : "pencil.circle",
+            isActive: game.isNoteMode,
+            tint: .orange
+        ) {
+            game.toggleNoteMode()
+        }
+    }
+    
+    private var eraseButton: some View {
+        KeyboardActionButton(
+            icon: "delete.backward",
+            isActive: game.lockedAction == .erase,
+            tint: .red
+        ) {
+            if game.isLockedMode {
+                game.setLockedAction(.erase)
+            } else {
+                game.deleteCell()
+            }
+        }
+    }
+    
+    private func fillNotesButton(square: Bool = true) -> some View {
+        KeyboardActionButton(
+            icon: "wand.and.stars",
+            tint: .green,
+            square: square
+        ) {
+            game.fillAllNotes()
+        }
+    }
+    
+    private func newGameButton(square: Bool = true) -> some View {
+        KeyboardActionButton(
+            icon: "arrow.trianglehead.2.counterclockwise",
+            tint: .blue,
+            square: square
+        ) {
+            showNewGameConfirmation = true
+        }
+        .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
+            Button("New Game") {
+                game.newGame()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your current progress will be lost.")
         }
     }
 }

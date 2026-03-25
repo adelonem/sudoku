@@ -8,13 +8,7 @@ import SwiftUI
 struct Victory: View {
     var onNewGame: () -> Void
     
-    private static let backgroundColor: Color = {
-#if os(macOS)
-        Color(nsColor: .textBackgroundColor)
-#else
-        Color(.systemBackground)
-#endif
-    }()
+    private static let backgroundColor: Color = .platformBackground
     
     var body: some View {
         VStack(spacing: 24) {
