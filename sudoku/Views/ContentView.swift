@@ -9,36 +9,30 @@ struct ContentView: View {
     @State private var game = Game()
     
     var body: some View {
-        HStack(alignment: .bottom) {
-            PuzzleGrid(game: game)
-                .layoutPriority(1)
+        GeometryReader { geo in
+            let isPortrait = geo.size.width < geo.size.height
             
-            VStack(spacing: 8) {
-                HStack(alignment: .center, spacing: 6) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if let number = game.puzzleNumber {
-                            Text("Puzzle #\(number)")
-                                .font(.headline)
-                        }
-                        if let difficulty = game.puzzleDifficulty {
-                            Text(difficulty.capitalized)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+            if isPortrait {
+                VStack(spacing: 12) {
+                    Header(game: game)
                     
-                    Button {
-                        game.undo()
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward.circle.fill")
-                            .font(.title)
-                            .foregroundStyle(game.canUndo ? .blue : .gray.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!game.canUndo)
+                    PuzzleGrid(game: game)
+                        .layoutPriority(1)
+                    
+                    Keyboard(game: game, isPortrait: true)
                 }
-                
-                Keyboard(game: game)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                HStack(alignment: .bottom) {
+                    PuzzleGrid(game: game)
+                        .layoutPriority(1)
+                    
+                    VStack(spacing: 8) {
+                        Header(game: game)
+                        Keyboard(game: game)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .overlay(alignment: .top) {
