@@ -9,7 +9,7 @@ struct Header: View {
     let game: Game
     
     var body: some View {
-        HStack(alignment: .center, spacing: 6) {
+        HStack {
             VStack(alignment: .leading, spacing: 2) {
                 if let number = game.puzzleNumber {
                     Text("Puzzle #\(number)")
@@ -21,6 +21,8 @@ struct Header: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            
+            Spacer()
             
             Button {
                 game.undo()

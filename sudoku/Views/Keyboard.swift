@@ -9,6 +9,8 @@ struct Keyboard: View {
     let game: Game
     var isPortrait: Bool = false
     @State private var showNewGameConfirmation = false
+    @State private var keyboardWidth: CGFloat?
+    @State private var rowHeight: CGFloat?
     
     var body: some View {
         if isPortrait {
@@ -87,9 +89,9 @@ struct Keyboard: View {
     // MARK: - Landscape layout (3×3 digit grid + action rows)
     
     private var landscapeLayout: some View {
-        Grid(horizontalSpacing: 4, verticalSpacing: 4) {
+        VStack(spacing: 4) {
             ForEach(0..<Puzzle.blockSize, id: \.self) { i in
-                GridRow {
+                HStack(spacing: 4) {
                     ForEach(0..<Puzzle.blockSize, id: \.self) { j in
                         let number = Puzzle.blockSize * i + j + 1
                         KeyboardKey(number: number, game: game)
@@ -97,7 +99,7 @@ struct Keyboard: View {
                 }
             }
             
-            GridRow {
+            HStack(spacing: 4) {
                 KeyboardActionButton(
                     icon: game.isLockedMode ? "hand.tap.fill" : "hand.tap",
                     isActive: game.isLockedMode,
@@ -126,35 +128,39 @@ struct Keyboard: View {
                     }
                 }
             }
-            
-            GridRow {
-                HStack(spacing: 4) {
-                    KeyboardActionButton(
-                        icon: "wand.and.stars",
-                        tint: .green,
-                        square: false
-                    ) {
-                        game.fillAllNotes()
-                    }
-                    
-                    KeyboardActionButton(
-                        icon: "arrow.counterclockwise",
-                        tint: .blue,
-                        square: false
-                    ) {
-                        showNewGameConfirmation = true
-                    }
-                    .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
-                        Button("New Game") {
-                            game.newGame()
-                        }
-                        Button("Cancel", role: .cancel) {}
-                    } message: {
-                        Text("Your current progress will be lost.")
-                    }
-                }
-                .gridCellColumns(Puzzle.blockSize)
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { size in
+                keyboardWidth = size.width
+                rowHeight = size.height
             }
+            
+            HStack(spacing: 4) {
+                KeyboardActionButton(
+                    icon: "wand.and.stars",
+                    tint: .green,
+                    square: false
+                ) {
+                    game.fillAllNotes()
+                }
+                
+                KeyboardActionButton(
+                    icon: "arrow.counterclockwise",
+                    tint: .blue,
+                    square: false
+                ) {
+                    showNewGameConfirmation = true
+                }
+                .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
+                    Button("New Game") {
+                        game.newGame()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Your current progress will be lost.")
+                }
+            }
+            .frame(maxWidth: keyboardWidth, maxHeight: rowHeight)
         }
     }
 }

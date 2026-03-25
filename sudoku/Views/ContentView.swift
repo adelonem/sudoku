@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var game = Game()
+    @State private var keyboardWidth: CGFloat?
     
     var body: some View {
         GeometryReader { geo in
@@ -29,7 +30,13 @@ struct ContentView: View {
                     
                     VStack(spacing: 8) {
                         Header(game: game)
+                            .frame(maxWidth: keyboardWidth)
                         Keyboard(game: game)
+                            .onGeometryChange(for: CGFloat.self) { proxy in
+                                proxy.size.width
+                            } action: { width in
+                                keyboardWidth = width
+                            }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
