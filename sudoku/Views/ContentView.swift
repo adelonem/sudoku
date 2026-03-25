@@ -51,6 +51,19 @@ struct ContentView: View {
         }
         .animation(.default, value: game.isLoading)
         .animation(.default, value: game.isSaving)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            if game.isSolved {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                
+                Victory {
+                    game.newGame()
+                }
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.5), value: game.isSolved)
         .onAppear {
             game.load()
         }

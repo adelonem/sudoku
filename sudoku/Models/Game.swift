@@ -34,6 +34,21 @@ class Game {
     /// The current puzzle difficulty label, if any.
     var puzzleDifficulty: String? { puzzle.difficulty }
     
+    /// Whether the puzzle is solved: every cell is filled and there are no conflicts.
+    var isSolved: Bool {
+        for index in puzzle.cells.indices {
+            guard puzzle.cells[index].digit != nil else { return false }
+        }
+        for row in 0..<Puzzle.size {
+            for col in 0..<Puzzle.size {
+                if PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle) {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+    
     // MARK: - Cell queries
     
     /// Returns the display digit (1-9) at the given cell, or nil if empty.
