@@ -21,13 +21,16 @@ struct PuzzleGrid: View {
                                 let cellNotes = game.notes(atRow: row, col: col)
                                 if let digit = game.digit(atRow: row, col: col) {
                                     Text("\(digit)")
-                                        .font(.title)
+                                        .font(.system(size: 36))
                                         .fontWeight(.medium)
+                                        .minimumScaleFactor(0.1)
+                                        .lineLimit(1)
                                         .foregroundStyle(
                                             game.isClue(atRow: row, col: col)
                                             ? Color.primary
                                             : Color.accentColor
                                         )
+                                        .padding(2)
                                 } else if !cellNotes.isEmpty {
                                     PuzzleGridCell(
                                         notes: cellNotes,

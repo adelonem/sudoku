@@ -32,12 +32,17 @@ struct KeyboardKey: View {
         } label: {
             VStack(spacing: 0) {
                 Text("\(number)")
-                    .font(.title2)
+                    .font(.system(size: 36))
+                    .minimumScaleFactor(0.1)
+                    .lineLimit(1)
                     .fontWeight(.medium)
                 Text("(\(remaining))")
-                    .font(.caption2)
+                    .font(.system(size: 18))
+                    .minimumScaleFactor(0.1)
+                    .lineLimit(1)
                     .fontWeight(.regular)
             }
+            .padding(2)
             .foregroundStyle(
                 isExhausted ? Color.gray.opacity(0.4) :
                     game.isNoteMode ? Color.orange : Color.primary
