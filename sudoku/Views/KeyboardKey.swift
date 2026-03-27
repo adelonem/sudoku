@@ -8,7 +8,7 @@ import SwiftUI
 /// A key that enters a digit on tap, or selects it as the locked action.
 struct KeyboardKey: View {
     let number: Int
-    let game: Game
+    @Environment(Game.self) private var game
     
     private var isActive: Bool {
         game.lockedAction == .digit(number)
@@ -32,26 +32,26 @@ struct KeyboardKey: View {
         } label: {
             VStack(spacing: 0) {
                 Text("\(number)")
-                    .font(.system(size: 36))
+                    .font(.system(size: Style.digitFontSize))
                     .minimumScaleFactor(0.1)
                     .lineLimit(1)
                     .fontWeight(.medium)
                 Text("(\(remaining))")
-                    .font(.system(size: 18))
+                    .font(.system(size: Style.remainingCountFontSize))
                     .minimumScaleFactor(0.1)
                     .lineLimit(1)
                     .fontWeight(.regular)
             }
             .padding(2)
             .foregroundStyle(
-                isExhausted ? Color.gray.opacity(0.4) :
+                isExhausted ? Color.gray.opacity(Style.disabledOpacity) :
                     game.isNoteMode ? Color.orange : Color.primary
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .aspectRatio(1.0, contentMode: .fit)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.gray.opacity(isActive ? 0.4 : 0.15))
+                RoundedRectangle(cornerRadius: Style.keyCornerRadius)
+                    .fill(.gray.opacity(isActive ? Style.disabledOpacity : Style.inactiveBackgroundOpacity))
             )
         }
         .buttonStyle(.plain)

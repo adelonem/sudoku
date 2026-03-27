@@ -6,13 +6,8 @@
 import SwiftUI
 
 struct Victory: View {
-    let game: Game
-    
+    @Environment(Game.self) private var game
     @State private var showPuzzleNumberInput = false
-    @State private var puzzleNumberText = ""
-    @State private var showInvalidPuzzleAlert = false
-    
-    private static let backgroundColor: Color = .platformBackground
     
     var body: some View {
         VStack(spacing: 24) {
@@ -40,10 +35,9 @@ struct Victory: View {
                 .buttonStyle(.borderedProminent)
                 
                 Button {
-                    puzzleNumberText = ""
                     showPuzzleNumberInput = true
                 } label: {
-                    Label("Choose Puzzle…", systemImage: "number")
+                    Label("Choose Puzzle\u{2026}", systemImage: "number")
                         .font(.callout)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -52,28 +46,7 @@ struct Victory: View {
             }
         }
         .padding(40)
-        .background(Self.backgroundColor, in: RoundedRectangle(cornerRadius: 20))
-        .alert("Choose a Puzzle", isPresented: $showPuzzleNumberInput) {
-            TextField("Puzzle number", text: $puzzleNumberText)
-#if !os(macOS)
-                .keyboardType(.numberPad)
-#endif
-            Button("Start") {
-                if let number = Int(puzzleNumberText),
-                   game.newGame(number: number) {
-                    // Success – game loaded
-                } else {
-                    showInvalidPuzzleAlert = true
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enter a puzzle number between 1 and \(game.puzzleCount).")
-        }
-        .alert("Puzzle Not Found", isPresented: $showInvalidPuzzleAlert) {
-            Button("OK") {}
-        } message: {
-            Text("No puzzle matches this number. Please choose a number between 1 and \(game.puzzleCount).")
-        }
+        .background(Style.background, in: RoundedRectangle(cornerRadius: Style.victoryCornerRadius))
+        .puzzleNumberPicker(isPresented: $showPuzzleNumberInput)
     }
 }

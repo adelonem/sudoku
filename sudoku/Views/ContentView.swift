@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var game = Game()
+    @Environment(Game.self) private var game
     @State private var keyboardWidth: CGFloat?
     
     var body: some View {
@@ -15,23 +15,23 @@ struct ContentView: View {
             
             if isPortrait {
                 VStack(spacing: 12) {
-                    Header(game: game)
+                    Header()
                     
-                    PuzzleGrid(game: game)
+                    PuzzleGrid()
                         .layoutPriority(1)
                     
-                    Keyboard(game: game, isPortrait: true)
+                    Keyboard(isPortrait: true)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 HStack(alignment: .bottom) {
-                    PuzzleGrid(game: game)
+                    PuzzleGrid()
                         .layoutPriority(1)
                     
                     VStack(spacing: 8) {
-                        Header(game: game)
+                        Header()
                             .frame(maxWidth: keyboardWidth)
-                        Keyboard(game: game)
+                        Keyboard()
                             .onGeometryChange(for: CGFloat.self) { proxy in
                                 proxy.size.width
                             } action: { width in
@@ -46,7 +46,10 @@ struct ContentView: View {
             if game.isLoading || game.isSaving {
                 ProgressView()
                     .padding(8)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .background(
+                        .ultraThinMaterial,
+                        in: RoundedRectangle(cornerRadius: Style.progressIndicatorCornerRadius)
+                    )
                     .transition(.opacity)
             }
         }
@@ -55,10 +58,10 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay {
             if game.isSolved {
-                Color.black.opacity(0.4)
+                Color.black.opacity(Style.overlayDimOpacity)
                     .ignoresSafeArea()
                 
-                Victory(game: game)
+                Victory()
                     .transition(.scale.combined(with: .opacity))
             }
         }
@@ -72,4 +75,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(Game())
 }

@@ -6,12 +6,10 @@
 import SwiftUI
 
 struct Keyboard: View {
-    let game: Game
+    @Environment(Game.self) private var game
     var isPortrait: Bool = false
     @State private var showNewGameConfirmation = false
     @State private var showPuzzleNumberInput = false
-    @State private var puzzleNumberText = ""
-    @State private var showInvalidPuzzleAlert = false
     @State private var keyboardWidth: CGFloat?
     @State private var rowHeight: CGFloat?
     
@@ -30,7 +28,7 @@ struct Keyboard: View {
             Grid(horizontalSpacing: 4, verticalSpacing: 0) {
                 GridRow {
                     ForEach(1...9, id: \.self) { number in
-                        KeyboardKey(number: number, game: game)
+                        KeyboardKey(number: number)
                     }
                 }
             }
@@ -53,7 +51,7 @@ struct Keyboard: View {
                 HStack(spacing: 4) {
                     ForEach(0..<Puzzle.blockSize, id: \.self) { j in
                         let number = Puzzle.blockSize * i + j + 1
-                        KeyboardKey(number: number, game: game)
+                        KeyboardKey(number: number)
                     }
                 }
             }
@@ -136,35 +134,13 @@ struct Keyboard: View {
             Button("Random Puzzle") {
                 game.newGame()
             }
-            Button("Choose Puzzle…") {
-                puzzleNumberText = ""
+            Button("Choose Puzzle\u{2026}") {
                 showPuzzleNumberInput = true
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Your current progress will be lost.")
         }
-        .alert("Choose a Puzzle", isPresented: $showPuzzleNumberInput) {
-            TextField("Puzzle number", text: $puzzleNumberText)
-#if !os(macOS)
-                .keyboardType(.numberPad)
-#endif
-            Button("Start") {
-                if let number = Int(puzzleNumberText),
-                   game.newGame(number: number) {
-                    // Success – game loaded
-                } else {
-                    showInvalidPuzzleAlert = true
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Enter a puzzle number between 1 and \(game.puzzleCount).")
-        }
-        .alert("Puzzle Not Found", isPresented: $showInvalidPuzzleAlert) {
-            Button("OK") {}
-        } message: {
-            Text("No puzzle matches this number. Please choose a number between 1 and \(game.puzzleCount).")
-        }
+        .puzzleNumberPicker(isPresented: $showPuzzleNumberInput)
     }
 }

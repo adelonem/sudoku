@@ -19,25 +19,12 @@ struct KeyboardActionButton: View {
                 .font(.callout)
                 .fontWeight(.medium)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .if(square) { view in
-                    view.aspectRatio(1.0, contentMode: .fit)
-                }
+                .aspectRatio(square ? 1.0 : nil, contentMode: .fit)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(tint.opacity(isActive ? 0.3 : 0.15))
+                    RoundedRectangle(cornerRadius: Style.keyCornerRadius)
+                        .fill(tint.opacity(isActive ? Style.highlightOpacity : Style.inactiveBackgroundOpacity))
                 )
         }
         .buttonStyle(.plain)
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func `if`(_ condition: Bool, transform: (Self) -> some View) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
     }
 }

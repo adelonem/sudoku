@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct Header: View {
-    let game: Game
+    @Environment(Game.self) private var game
     
     var body: some View {
         HStack {
@@ -29,7 +29,7 @@ struct Header: View {
             } label: {
                 Image(systemName: "arrow.uturn.backward.circle.fill")
                     .font(.title)
-                    .foregroundStyle(game.canUndo ? .blue : .gray.opacity(0.4))
+                    .foregroundStyle(game.canUndo ? .blue : .gray.opacity(Style.disabledOpacity))
             }
             .buttonStyle(.plain)
             .disabled(!game.canUndo)

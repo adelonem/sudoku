@@ -8,7 +8,6 @@ import SwiftUI
 /// Draws the thick 3×3 block borders over the puzzle grid.
 struct BlockGridOverlay: View {
     private static let lineCount = Puzzle.blockSize + 1
-    private static let lineWidth: CGFloat = 2
     
     var body: some View {
         Canvas { context, size in
@@ -17,14 +16,14 @@ struct BlockGridOverlay: View {
             for i in 0..<Self.lineCount {
                 let position = CGFloat(i) * step
                 // Clamp to keep border lines within bounds
-                let offset = min(position, size.width - Self.lineWidth)
+                let offset = min(position, size.width - Style.blockBorderWidth)
                 
                 context.fill(
-                    Path(CGRect(x: offset, y: 0, width: Self.lineWidth, height: size.height)),
+                    Path(CGRect(x: offset, y: 0, width: Style.blockBorderWidth, height: size.height)),
                     with: .color(.primary)
                 )
                 context.fill(
-                    Path(CGRect(x: 0, y: offset, width: size.width, height: Self.lineWidth)),
+                    Path(CGRect(x: 0, y: offset, width: size.width, height: Style.blockBorderWidth)),
                     with: .color(.primary)
                 )
             }

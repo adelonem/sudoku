@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct PuzzleGrid: View {
-    let game: Game
+    @Environment(Game.self) private var game
     
     var body: some View {
         Grid(horizontalSpacing: 0, verticalSpacing: 0) {
@@ -14,14 +14,14 @@ struct PuzzleGrid: View {
                 GridRow {
                     ForEach(0..<Puzzle.size, id: \.self) { col in
                         Rectangle()
-                            .fill(cellColor(row: row, col: col))
+                            .fill(color(for: highlight(row: row, col: col)))
                             .aspectRatio(1.0, contentMode: .fit)
-                            .border(.gray.opacity(0.6), width: 0.5)
+                            .border(.gray.opacity(0.6), width: Style.gridCellBorderWidth)
                             .overlay {
                                 let cellNotes = game.notes(atRow: row, col: col)
                                 if let digit = game.digit(atRow: row, col: col) {
                                     Text("\(digit)")
-                                        .font(.system(size: 36))
+                                        .font(.system(size: Style.digitFontSize))
                                         .fontWeight(.medium)
                                         .minimumScaleFactor(0.1)
                                         .lineLimit(1)
@@ -34,7 +34,7 @@ struct PuzzleGrid: View {
                                 } else if !cellNotes.isEmpty {
                                     PuzzleGridCell(
                                         notes: cellNotes,
-                                        highlightedDigit: selectedDigit
+                                        highlightedDigit: game.highlightedDigit
                                     )
                                     .padding(1)
                                 }
@@ -52,49 +52,26 @@ struct PuzzleGrid: View {
         }
     }
     
-    /// The digit to highlight across the grid, driven by the last user action.
-    private var selectedDigit: Int? {
-        game.highlightedDigit
+    // MARK: - Highlight logic
+    
+    private func highlight(row: Int, col: Int) -> CellHighlight {
+        CellHighlight.forCell(
+            atRow: row,
+            col: col,
+            selectedCell: game.selectedCell,
+            highlightedDigit: game.highlightedDigit,
+            digit: game.digit(atRow: row, col: col),
+            hasConflict: game.hasConflict(atRow: row, col: col)
+        )
     }
     
-    private static let defaultCellColor: Color = .platformBackground
-    
-    private func cellColor(row: Int, col: Int) -> Color {
-        if game.hasConflict(atRow: row, col: col) {
-            return .red.opacity(0.15)
+    private func color(for highlight: CellHighlight) -> Color {
+        switch highlight {
+        case .conflict:   .red.opacity(Style.conflictOpacity)
+        case .digitMatch: Color.accentColor.opacity(Style.highlightOpacity)
+        case .selected:   Color.accentColor.opacity(Style.highlightOpacity)
+        case .peer:       Color.accentColor.opacity(Style.peerHighlightOpacity)
+        case .none:       Style.background
         }
-        
-        // Highlight cells whose digit matches the active highlighted digit
-        if let selectedDigit, let digit = game.digit(atRow: row, col: col), selectedDigit == digit {
-            return Color.accentColor.opacity(0.3)
-        }
-        
-        guard let selected = game.selectedCell else { return Self.defaultCellColor }
-        
-        // Highlight the selected cell
-        if selected.row == row && selected.col == col {
-            return Color.accentColor.opacity(0.3)
-        }
-        
-        // Highlight cells in the same row, column, or 3×3 block
-        let bs = Puzzle.blockSize
-        if selected.row == row
-            || selected.col == col
-            || (selected.row / bs == row / bs && selected.col / bs == col / bs) {
-            return Color.accentColor.opacity(0.1)
-        }
-        
-        return Self.defaultCellColor
     }
-}
-
-extension Color {
-    /// The platform-appropriate opaque background color.
-    static let platformBackground: Color = {
-#if os(macOS)
-        Color(nsColor: .textBackgroundColor)
-#else
-        Color(.systemBackground)
-#endif
-    }()
 }

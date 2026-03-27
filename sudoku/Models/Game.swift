@@ -14,11 +14,11 @@ enum LockedAction: Equatable {
 
 @MainActor @Observable
 class Game {
-    private(set) var isLockedMode = false
     private(set) var lockedAction: LockedAction?
     private(set) var highlightedDigit: Int?
     private(set) var isNoteMode = false
     private(set) var isLoading = false
+    private(set) var isLockedMode = false
     private(set) var isSaving = false
     private(set) var lastError: String?
     private(set) var puzzle = Puzzle()
@@ -28,8 +28,11 @@ class Game {
     private static let maxUndoDepth = 1000
     private var undoStack: [Puzzle] = []
     
-    /// Cached count of each placed digit (1-9). Updated after every puzzle mutation.
-    private var digitCounts: [Int: Int] = [:]
+    /// Cached count of each placed digit (1-9). Index 0 is unused, indices 1-9 hold counts.
+    private var digitCounts = Array(repeating: 0, count: 10)
+    
+    /// Cached solved state, invalidated on every puzzle mutation.
+    private(set) var isSolved = false
     
     /// Whether there is at least one action that can be undone.
     var canUndo: Bool { !undoStack.isEmpty }
@@ -39,19 +42,6 @@ class Game {
     
     /// The current puzzle difficulty label, if any.
     var puzzleDifficulty: String? { puzzle.difficulty }
-    
-    /// Whether the puzzle is solved: every cell is filled and there are no conflicts.
-    var isSolved: Bool {
-        for row in 0..<Puzzle.size {
-            for col in 0..<Puzzle.size {
-                guard puzzle[row, col].digit != nil else { return false }
-                if PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle) {
-                    return false
-                }
-            }
-        }
-        return true
-    }
     
     // MARK: - Cell queries
     
@@ -78,7 +68,7 @@ class Game {
     /// Returns how many more times the given digit (1-9) needs to be placed.
     /// In a solved Sudoku each digit appears exactly 9 times.
     func remainingCount(for digit: Int) -> Int {
-        max(0, Puzzle.size - (digitCounts[digit] ?? 0))
+        max(0, Puzzle.size - digitCounts[digit])
     }
     
     // MARK: - Mode toggles
@@ -144,7 +134,7 @@ class Game {
             guard let number else {
                 puzzle[cell] = .empty
                 highlightedDigit = nil
-                saveInBackground()
+                persistState()
                 return
             }
             var current = puzzle[cell].cellNotes
@@ -162,7 +152,7 @@ class Game {
             }
             refreshNotes()
         }
-        saveInBackground()
+        persistState()
     }
     
     /// Deletes the content of the currently selected cell (digit and notes), then saves.
@@ -172,7 +162,7 @@ class Game {
         pushUndo()
         puzzle[cell] = .empty
         refreshNotes()
-        saveInBackground()
+        persistState()
     }
     
     /// Fills all empty cells' notes with valid candidates based on the current grid state.
@@ -186,12 +176,7 @@ class Game {
                 puzzle[row, col] = candidates.isEmpty ? .empty : .notes(candidates)
             }
         }
-        saveInBackground()
-    }
-    
-    /// Returns the total number of puzzles available in the collection.
-    var puzzleCount: Int {
-        (try? Storage.loadPuzzleCollection().count) ?? 0
+        persistState()
     }
     
     /// Loads a random puzzle from the collection (different from the current one) and saves it.
@@ -232,7 +217,7 @@ class Game {
         lockedAction = nil
         highlightedDigit = nil
         undoStack.removeAll()
-        saveInBackground()
+        persistState()
     }
     
     /// Restores a previously saved puzzle from persistent storage.
@@ -244,6 +229,7 @@ class Game {
             // No saved game found — this is expected on first launch.
         }
         recomputeDigitCounts()
+        recomputeIsSolved()
         isLoading = false
     }
     
@@ -257,7 +243,7 @@ class Game {
         } else {
             highlightedDigit = nil
         }
-        saveInBackground()
+        persistState()
     }
     
     // MARK: - Private helpers
@@ -272,13 +258,22 @@ class Game {
     
     /// Recomputes the cached digit placement counts from the current grid.
     private func recomputeDigitCounts() {
-        var counts: [Int: Int] = [:]
+        digitCounts = Array(repeating: 0, count: 10)
         for cell in puzzle.cells {
             if let d = cell.digit {
-                counts[d, default: 0] += 1
+                digitCounts[d] += 1
             }
         }
-        digitCounts = counts
+    }
+    
+    /// Recomputes the cached solved state from the current grid.
+    private func recomputeIsSolved() {
+        isSolved = puzzle.cells.allSatisfy { $0.digit != nil }
+        && (0..<Puzzle.size).allSatisfy { row in
+            (0..<Puzzle.size).allSatisfy { col in
+                !PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle)
+            }
+        }
     }
     
     /// Removes invalidated digits from existing notes based on the current grid state.
@@ -295,9 +290,10 @@ class Game {
         }
     }
     
-    /// Saves the puzzle, updating `isSaving` while in progress.
-    private func saveInBackground() {
+    /// Recomputes cached state and persists the puzzle to disk.
+    private func persistState() {
         recomputeDigitCounts()
+        recomputeIsSolved()
         isSaving = true
         do {
             try Storage.save(puzzle)
