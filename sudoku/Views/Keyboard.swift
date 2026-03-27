@@ -9,6 +9,9 @@ struct Keyboard: View {
     let game: Game
     var isPortrait: Bool = false
     @State private var showNewGameConfirmation = false
+    @State private var showPuzzleNumberInput = false
+    @State private var puzzleNumberText = ""
+    @State private var showInvalidPuzzleAlert = false
     @State private var keyboardWidth: CGFloat?
     @State private var rowHeight: CGFloat?
     
@@ -129,13 +132,39 @@ struct Keyboard: View {
         ) {
             showNewGameConfirmation = true
         }
-        .confirmationDialog("Start a new game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
-            Button("New Game") {
+        .confirmationDialog("Start a New Game?", isPresented: $showNewGameConfirmation, titleVisibility: .visible) {
+            Button("Random Puzzle") {
                 game.newGame()
+            }
+            Button("Choose Puzzle…") {
+                puzzleNumberText = ""
+                showPuzzleNumberInput = true
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Your current progress will be lost.")
+        }
+        .alert("Choose a Puzzle", isPresented: $showPuzzleNumberInput) {
+            TextField("Puzzle number", text: $puzzleNumberText)
+#if !os(macOS)
+                .keyboardType(.numberPad)
+#endif
+            Button("Start") {
+                if let number = Int(puzzleNumberText),
+                   game.newGame(number: number) {
+                    // Success – game loaded
+                } else {
+                    showInvalidPuzzleAlert = true
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter a puzzle number between 1 and \(game.puzzleCount).")
+        }
+        .alert("Puzzle Not Found", isPresented: $showInvalidPuzzleAlert) {
+            Button("OK") {}
+        } message: {
+            Text("No puzzle matches this number. Please choose a number between 1 and \(game.puzzleCount).")
         }
     }
 }

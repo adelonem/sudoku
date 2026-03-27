@@ -189,6 +189,11 @@ class Game {
         saveInBackground()
     }
     
+    /// Returns the total number of puzzles available in the collection.
+    var puzzleCount: Int {
+        (try? Storage.loadPuzzleCollection().count) ?? 0
+    }
+    
     /// Loads a random puzzle from the collection (different from the current one) and saves it.
     func newGame() {
         do {
@@ -199,6 +204,28 @@ class Game {
             lastError = error.localizedDescription
             puzzle = Puzzle()
         }
+        resetState()
+    }
+    
+    /// Loads a specific puzzle by number. Returns false if the puzzle was not found.
+    @discardableResult
+    func newGame(number: Int) -> Bool {
+        do {
+            let collection = try Storage.loadPuzzleCollection()
+            guard let found = collection.first(where: { $0.number == number }) else {
+                return false
+            }
+            puzzle = found
+        } catch {
+            lastError = error.localizedDescription
+            return false
+        }
+        resetState()
+        return true
+    }
+    
+    /// Resets all UI state and clears the undo stack after loading a new puzzle.
+    private func resetState() {
         selectedCell = nil
         isNoteMode = false
         isLockedMode = false
