@@ -10,7 +10,7 @@ struct KeyboardActionButton: View {
     let icon: String
     var isActive: Bool = false
     let tint: Color
-    var square: Bool = true
+    var aspectRatio: CGFloat = 1.0
     let action: () -> Void
     
     var body: some View {
@@ -19,7 +19,7 @@ struct KeyboardActionButton: View {
                 .font(.callout)
                 .fontWeight(.medium)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .aspectRatio(square ? 1.0 : nil, contentMode: .fit)
+                .aspectRatio(aspectRatio, contentMode: .fit)
                 .background(
                     RoundedRectangle(cornerRadius: Style.keyCornerRadius)
                         .fill(tint.opacity(isActive ? Style.highlightOpacity : Style.inactiveBackgroundOpacity))

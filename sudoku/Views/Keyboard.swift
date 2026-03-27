@@ -10,8 +10,6 @@ struct Keyboard: View {
     var isPortrait: Bool = false
     @State private var showNewGameConfirmation = false
     @State private var showPuzzleNumberInput = false
-    @State private var keyboardWidth: CGFloat?
-    @State private var rowHeight: CGFloat?
     
     var body: some View {
         if isPortrait {
@@ -61,18 +59,11 @@ struct Keyboard: View {
                 noteButton
                 eraseButton
             }
-            .onGeometryChange(for: CGSize.self) { proxy in
-                proxy.size
-            } action: { size in
-                keyboardWidth = size.width
-                rowHeight = size.height
-            }
             
             HStack(spacing: 4) {
-                fillNotesButton(square: false)
-                newGameButton(square: false)
+                fillNotesButton(aspectRatio: 1.5)
+                newGameButton(aspectRatio: 1.5)
             }
-            .frame(maxWidth: keyboardWidth, maxHeight: rowHeight)
         }
     }
     
@@ -112,21 +103,21 @@ struct Keyboard: View {
         }
     }
     
-    private func fillNotesButton(square: Bool = true) -> some View {
+    private func fillNotesButton(aspectRatio: CGFloat = 1.0) -> some View {
         KeyboardActionButton(
             icon: "wand.and.stars",
             tint: .green,
-            square: square
+            aspectRatio: aspectRatio
         ) {
             game.fillAllNotes()
         }
     }
     
-    private func newGameButton(square: Bool = true) -> some View {
+    private func newGameButton(aspectRatio: CGFloat = 1.0) -> some View {
         KeyboardActionButton(
             icon: "arrow.trianglehead.2.counterclockwise",
             tint: .blue,
-            square: square
+            aspectRatio: aspectRatio
         ) {
             showNewGameConfirmation = true
         }
