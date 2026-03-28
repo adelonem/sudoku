@@ -28,6 +28,9 @@ class Game {
     private static let maxUndoDepth = 1000
     private var undoStack: [Puzzle] = []
     
+    /// Cached solution grid computed from the puzzle's clues only.
+    private var solution: [Int]?
+    
     /// Cached count of each placed digit (1-9). Index 0 is unused, indices 1-9 hold counts.
     private var digitCounts = Array(repeating: 0, count: 10)
     
@@ -60,9 +63,16 @@ class Game {
         puzzle[row, col].isClue
     }
     
-    /// Returns true if an entry at the given cell conflicts with another cell in the same row, column, or block.
+    /// Returns true if a user entry does not match the puzzle's solution,
+    /// or if the cell conflicts with another cell in the same row, column, or block.
     func hasConflict(atRow row: Int, col: Int) -> Bool {
-        PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle)
+        let cell = puzzle[row, col]
+        if case .userEntry(let d) = cell,
+           let solution,
+           solution[row * Puzzle.size + col] != d {
+            return true
+        }
+        return PuzzleSolver.hasConflict(atRow: row, col: col, in: puzzle)
     }
     
     /// Returns how many more times the given digit (1-9) needs to be placed.
@@ -217,6 +227,7 @@ class Game {
         lockedAction = nil
         highlightedDigit = nil
         undoStack.removeAll()
+        solution = PuzzleSolver.solve(puzzle)
         persistState()
     }
     
@@ -228,6 +239,7 @@ class Game {
         } catch {
             // No saved game found — this is expected on first launch.
         }
+        solution = PuzzleSolver.solve(puzzle)
         recomputeDigitCounts()
         recomputeIsSolved()
         isLoading = false
