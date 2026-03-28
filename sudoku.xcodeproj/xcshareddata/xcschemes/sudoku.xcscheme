@@ -16,8 +16,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6E14F0F52F48E39900597C95"
-               BuildableName = "sudoku.app"
-               BlueprintName = "sudoku"
+               BuildableName = "Sudoku.app"
+               BlueprintName = "Sudoku"
                ReferencedContainer = "container:sudoku.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,8 +45,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6E14F0F52F48E39900597C95"
-            BuildableName = "sudoku.app"
-            BlueprintName = "sudoku"
+            BuildableName = "Sudoku.app"
+            BlueprintName = "Sudoku"
             ReferencedContainer = "container:sudoku.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,8 +62,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6E14F0F52F48E39900597C95"
-            BuildableName = "sudoku.app"
-            BlueprintName = "sudoku"
+            BuildableName = "Sudoku.app"
+            BlueprintName = "Sudoku"
             ReferencedContainer = "container:sudoku.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		6E14F0F62F48E39900597C95 /* sudoku.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sudoku.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6E14F0F62F48E39900597C95 /* Sudoku.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sudoku.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,7 +40,7 @@
 		6E14F0F72F48E39900597C95 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6E14F0F62F48E39900597C95 /* sudoku.app */,
+				6E14F0F62F48E39900597C95 /* Sudoku.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		6E14F0F52F48E39900597C95 /* sudoku */ = {
+		6E14F0F52F48E39900597C95 /* Sudoku */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6E14F1012F48E39900597C95 /* Build configuration list for PBXNativeTarget "sudoku" */;
+			buildConfigurationList = 6E14F1012F48E39900597C95 /* Build configuration list for PBXNativeTarget "Sudoku" */;
 			buildPhases = (
 				6E14F0F22F48E39900597C95 /* Sources */,
 				6E14F0F32F48E39900597C95 /* Frameworks */,
@@ -63,11 +63,11 @@
 			fileSystemSynchronizedGroups = (
 				6E14F0F82F48E39900597C95 /* sudoku */,
 			);
-			name = sudoku;
+			name = Sudoku;
 			packageProductDependencies = (
 			);
 			productName = sudoku;
-			productReference = 6E14F0F62F48E39900597C95 /* sudoku.app */;
+			productReference = 6E14F0F62F48E39900597C95 /* Sudoku.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -99,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				6E14F0F52F48E39900597C95 /* sudoku */,
+				6E14F0F52F48E39900597C95 /* Sudoku */,
 			);
 		};
 /* End PBXProject section */
@@ -250,8 +250,9 @@
 		6E14F1022F48E39900597C95 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App​Icon​";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -261,6 +262,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Sudoku;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIStatusBarStyle = "";
@@ -288,8 +291,9 @@
 		6E14F1032F48E39900597C95 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App​Icon​";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -299,6 +303,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Sudoku;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIStatusBarStyle = "";
@@ -335,7 +341,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6E14F1012F48E39900597C95 /* Build configuration list for PBXNativeTarget "sudoku" */ = {
+		6E14F1012F48E39900597C95 /* Build configuration list for PBXNativeTarget "Sudoku" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6E14F1022F48E39900597C95 /* Debug */,
