@@ -87,7 +87,11 @@ final class PuzzleViewModel {
         clearHint()
         selectedRow = row
         selectedCol = col
-        highlightedDigit = currentPuzzle.cells[row][col].value ?? selectedDigit
+        
+        if let value = currentPuzzle.cells[row][col].value {
+            highlightedDigit = value
+            selectedDigit = value
+        }
     }
     
     func cell(row: Int, col: Int) -> Cell {
