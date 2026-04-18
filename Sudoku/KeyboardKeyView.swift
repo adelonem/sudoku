@@ -46,9 +46,7 @@ struct KeyboardKeyView: View {
                     .foregroundStyle(Color.secondary)
             }
             .padding(2)
-            .foregroundStyle(
-                isExhausted ? Color.gray.opacity(Style.disabledOpacity) : Color.primary
-            )
+            .foregroundStyle(Color.primary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .aspectRatio(1.0 / aspectRatio, contentMode: .fit)
             .background(
@@ -58,5 +56,6 @@ struct KeyboardKeyView: View {
         }
         .buttonStyle(.plain)
         .disabled(isExhausted)
+        .opacity(isExhausted ? 0 : 1)
     }
 }
