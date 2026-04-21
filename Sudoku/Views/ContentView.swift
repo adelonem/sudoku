@@ -10,9 +10,12 @@ struct ContentView: View {
     @State private var keyboardWidth: CGFloat?
     @State private var showNewGame = false
     @State private var showCompletedPuzzles = false
+    @State private var showTutorial = false
+    @State private var hasPresentedInitialTutorial = false
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("accentColorName") private var selectedColorName = "Blue"
     @AppStorage("fontOptionRawValue") private var selectedFontRawValue = FontOption.standard.rawValue
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
     
     private var customAccentColor: Color {
         Style.accentColors.first { $0.name == selectedColorName }?.color
@@ -84,11 +87,15 @@ struct ContentView: View {
         }
         .onAppear {
             viewModel.load()
+            presentTutorialIfNeeded()
         }
         .onChange(of: showNewGame) {
             updateTimerState()
         }
         .onChange(of: showCompletedPuzzles) {
+            updateTimerState()
+        }
+        .onChange(of: showTutorial) {
             updateTimerState()
         }
         .onChange(of: viewModel.isShowingHint) {
@@ -110,6 +117,12 @@ struct ContentView: View {
         .navigationDestination(isPresented: $showCompletedPuzzles) {
             CompletedPuzzlesView(viewModel: viewModel)
                 .tint(customAccentColor)
+                .environment(\.customFontOption, fontOption)
+        }
+        .navigationDestination(isPresented: $showTutorial) {
+            TutorialView()
+                .tint(customAccentColor)
+                .environment(\.customAccentColor, customAccentColor)
                 .environment(\.customFontOption, fontOption)
         }
         .navigationDestination(isPresented: showHintsView) {
@@ -135,6 +148,18 @@ struct ContentView: View {
                 }
                 .accessibilityLabel("Completed Puzzles")
                 .accessibilityIdentifier("completedPuzzlesButton")
+            }
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    Button {
+                        openTutorial()
+                    } label: {
+                        Label("How to Play", systemImage: "questionmark.circle")
+                    }
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .accessibilityLabel("Information")
             }
             ToolbarItem(placement: .automatic) {
                 Menu {
@@ -169,11 +194,29 @@ struct ContentView: View {
     }
     
     private func updateTimerState() {
-        if scenePhase == .active, !showNewGame, !showCompletedPuzzles, !viewModel.isShowingHint {
+        if scenePhase == .active,
+           !showNewGame,
+           !showCompletedPuzzles,
+           !showTutorial,
+           !viewModel.isShowingHint {
             viewModel.startTimer()
         } else {
             viewModel.stopTimer()
         }
+    }
+    
+    private func presentTutorialIfNeeded() {
+        guard !hasPresentedInitialTutorial else { return }
+        hasPresentedInitialTutorial = true
+        
+        if !hasSeenTutorial {
+            openTutorial()
+        }
+    }
+    
+    private func openTutorial() {
+        hasSeenTutorial = true
+        showTutorial = true
     }
 }
 
