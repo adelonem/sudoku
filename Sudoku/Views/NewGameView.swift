@@ -17,73 +17,92 @@ struct NewGameView: View {
     @FocusState private var isFieldFocused: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 20) {
-                VStack(spacing: 12) {
-                    Text("Difficulty")
-                        .font(fontOption.font(for: .subheadline))
-                        .foregroundStyle(.secondary)
-                    
+        ScrollView {
+            VStack(spacing: 0) {
+                VStack(spacing: 20) {
                     VStack(spacing: 12) {
-                        ForEach(Self.difficultyOptions, id: \.self) { difficulty in
-                            Button {
-                                startNewGame(difficulty: difficulty)
-                            } label: {
-                                Text(localizedDifficulty(difficulty))
-                                    .font(fontOption.font(for: .title3).bold())
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
+                        Text("Difficulty")
+                            .font(fontOption.font(for: .subheadline))
+                            .foregroundStyle(.secondary)
+                        
+                        VStack(spacing: 12) {
+                            ForEach(Self.difficultyOptions, id: \.self) { difficulty in
+                                Button {
+                                    startNewGame(difficulty: difficulty)
+                                } label: {
+                                    Text(localizedDifficulty(difficulty))
+                                        .font(fontOption.font(for: .title3).bold())
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                }
+                                .buttonStyle(.borderedProminent)
                             }
-                            .buttonStyle(.borderedProminent)
                         }
                     }
                 }
-            }
-            .padding(.horizontal, 32)
-            .padding(.vertical, 32)
-            
-            Divider()
-            
-            VStack(spacing: 12) {
-                Text("Or enter a puzzle ID")
-                    .font(fontOption.font(for: .subheadline))
-                    .foregroundStyle(.secondary)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 32)
                 
-                TextField("Puzzle ID", text: $idInput)
-                    .font(fontOption.font(for: .body))
-                    .textFieldStyle(.roundedBorder)
-                    .focused($isFieldFocused)
-                    .onChange(of: idInput) { showError = false }
+                Divider()
+                
+                VStack(spacing: 12) {
+                    Text("Or enter a puzzle ID")
+                        .font(fontOption.font(for: .subheadline))
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("Puzzle ID", text: $idInput)
+                        .font(fontOption.font(for: .body))
+                        .textFieldStyle(.roundedBorder)
+                        .focused($isFieldFocused)
+                        .onChange(of: idInput) { showError = false }
 #if os(iOS)
-                    .keyboardType(.numberPad)
+                        .keyboardType(.numberPad)
 #endif
-                
-                if showError {
-                    Text("This puzzle doesn't exist.")
-                        .font(fontOption.font(for: .caption))
-                        .foregroundStyle(.red)
+                    
+                    if showError {
+                        Text("This puzzle doesn't exist.")
+                            .font(fontOption.font(for: .caption))
+                            .foregroundStyle(.red)
+                    }
                 }
-                
-                Button {
-                    tryLoadByID()
-                } label: {
-                    Text("Load Puzzle")
-                        .font(fontOption.font(for: .title3).bold())
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(idInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 32)
             }
-            .padding(.horizontal, 32)
-            .padding(.vertical, 32)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
+        .safeAreaInset(edge: .bottom) {
+            loadPuzzleButton
+                .padding(.horizontal, 32)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+                .background(.bar)
+        }
+#if os(iOS)
+        .scrollDismissesKeyboard(.interactively)
+#endif
         .navigationTitle("New Game")
+    }
+    
+    private var trimmedIDInput: String {
+        idInput.trimmingCharacters(in: .whitespaces)
+    }
+    
+    private var loadPuzzleButton: some View {
+        Button {
+            tryLoadByID()
+        } label: {
+            Text("Load Puzzle")
+                .font(fontOption.font(for: .title3).bold())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(trimmedIDInput.isEmpty)
     }
     
     private func tryLoadByID() {
         isFieldFocused = false
-        let id = Int(idInput.trimmingCharacters(in: .whitespaces))
+        let id = Int(trimmedIDInput)
         if let id, viewModel.loadGameByID(id) {
             dismiss()
         } else {
