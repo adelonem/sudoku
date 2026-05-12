@@ -25,9 +25,30 @@ struct KeyboardActionButtonView: View {
                 .aspectRatio(1.0, contentMode: .fit)
                 .opacity(isDisabled ? Style.disabledOpacity : 1.0)
                 .foregroundStyle(isActive ? accentColor : Color.primary)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(accentColor.opacity(0.2))
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(
+                            Color.primary.opacity(0.1),
+                            lineWidth: 1
+                        )
+                }
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
         .accessibilityLabel(accessibilityLabel)
     }
+}
+
+#Preview {
+    KeyboardActionButtonView(
+        icon: "lightbulb.fill",
+        accessibilityLabel: "Show Hint",
+        isActive: true,
+        action: {}
+    )
+    .padding()
 }
