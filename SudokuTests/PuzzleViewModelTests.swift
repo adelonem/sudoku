@@ -42,8 +42,50 @@ struct PuzzleViewModelTests {
     )
     
     @MainActor
-    @Test func hintPreviewAppliesEliminationsWithoutMutatingPuzzle() throws {
+    @Test func hintNavigationAppliesEliminationsToPuzzleNotes() throws {
         let savedGame = try JSONDecoder().decode(SavedGame.self, from: Data(Self.savedGameJSON.utf8))
+        // Seed notes on every empty cell so eliminations have something to remove.
+        let seededPuzzle = Puzzle(cells: savedGame.puzzle.cells.map { row in
+            row.map { cell in
+                cell == .empty ? Cell.notes(Set(1...9)) : cell
+            }
+        })
+        let viewModel = PuzzleViewModel(
+            puzzle: seededPuzzle,
+            dependencies: try Self.makeDependencies()
+        )
+        
+        viewModel.requestHint()
+        
+        #expect(viewModel.isShowingHint)
+        #expect(viewModel.activeHintChain.count >= 2)
+        #expect(viewModel.activeHintIndex == 0)
+        guard let firstHint = viewModel.activeHint,
+              let firstElimination = firstHint.eliminations.first else {
+            Issue.record("Expected the first hint to eliminate at least one candidate")
+            return
+        }
+        
+        // At step 0, the puzzle is not yet mutated — the player still sees the original notes.
+        #expect(viewModel.puzzle.cells[firstElimination.row][firstElimination.col].notes.contains(firstElimination.digit))
+        
+        viewModel.nextHint()
+        
+        // After advancing, the first hint's eliminations are applied to the puzzle.
+        #expect(viewModel.activeHintIndex == 1)
+        #expect(!viewModel.puzzle.cells[firstElimination.row][firstElimination.col].notes.contains(firstElimination.digit))
+        
+        viewModel.prevHint()
+        
+        // Going back rolls the eliminations off.
+        #expect(viewModel.activeHintIndex == 0)
+        #expect(viewModel.puzzle.cells[firstElimination.row][firstElimination.col].notes.contains(firstElimination.digit))
+    }
+    
+    @MainActor
+    @Test func hintInjectsRequiredNotesWhenPlayerHasNone() throws {
+        let savedGame = try JSONDecoder().decode(SavedGame.self, from: Data(Self.savedGameJSON.utf8))
+        // Player has no notes at all — every non-fixed/non-guess cell is empty.
         let viewModel = PuzzleViewModel(
             puzzle: savedGame.puzzle,
             dependencies: try Self.makeDependencies()
@@ -51,30 +93,57 @@ struct PuzzleViewModelTests {
         
         viewModel.requestHint()
         
-        #expect(viewModel.activeHintChain.count >= 2)
-        guard let firstHint = viewModel.activeHint,
-              let firstElimination = firstHint.eliminations.first else {
-            Issue.record("Expected the first hint to eliminate at least one candidate")
+        guard let hint = viewModel.activeHint else {
+            Issue.record("Expected an active hint")
             return
         }
         
-        guard let initialPreview = viewModel.hintPreviewPuzzle else {
-            Issue.record("Expected a hint preview puzzle")
-            return
+        let impactedDigits: Set<Int>
+        if let digit = hint.digit {
+            impactedDigits = [digit]
+        } else {
+            impactedDigits = Set(hint.eliminations.map(\.digit))
         }
         
-        #expect(initialPreview.cells[firstElimination.row][firstElimination.col].notes.contains(firstElimination.digit))
-        #expect(viewModel.puzzle.cells[firstElimination.row][firstElimination.col] == savedGame.puzzle.cells[firstElimination.row][firstElimination.col])
-        
-        viewModel.nextHint()
-        
-        guard let advancedPreview = viewModel.hintPreviewPuzzle else {
-            Issue.record("Expected a hint preview puzzle after advancing")
-            return
+        // For every cell involved in the hint, the impacted digits should be present as
+        // notes whenever they are valid candidates — even though the player had no notes.
+        var checkedAtLeastOne = false
+        for cell in hint.primaryCells + hint.secondaryCells {
+            let candidates = PuzzleSolver.candidates(atRow: cell.row, col: cell.col, in: savedGame.puzzle)
+            let expected = impactedDigits.intersection(candidates)
+            guard !expected.isEmpty else { continue }
+            let notes = viewModel.puzzle.cells[cell.row][cell.col].notes
+            #expect(notes.isSuperset(of: expected))
+            checkedAtLeastOne = true
         }
+        #expect(checkedAtLeastOne)
+    }
+    
+    @MainActor
+    @Test func finishHintAppliesAllEliminationsAndClosesHintMode() throws {
+        let savedGame = try JSONDecoder().decode(SavedGame.self, from: Data(Self.savedGameJSON.utf8))
+        let seededPuzzle = Puzzle(cells: savedGame.puzzle.cells.map { row in
+            row.map { cell in
+                cell == .empty ? Cell.notes(Set(1...9)) : cell
+            }
+        })
+        let viewModel = PuzzleViewModel(
+            puzzle: seededPuzzle,
+            dependencies: try Self.makeDependencies()
+        )
         
-        #expect(!advancedPreview.cells[firstElimination.row][firstElimination.col].notes.contains(firstElimination.digit))
-        #expect(viewModel.puzzle.cells[firstElimination.row][firstElimination.col] == savedGame.puzzle.cells[firstElimination.row][firstElimination.col])
+        viewModel.requestHint()
+        let chain = viewModel.activeHintChain
+        #expect(!chain.isEmpty)
+        
+        viewModel.finishHint()
+        
+        #expect(!viewModel.isShowingHint)
+        for hint in chain {
+            for elimination in hint.eliminations {
+                #expect(!viewModel.puzzle.cells[elimination.row][elimination.col].notes.contains(elimination.digit))
+            }
+        }
     }
     
     @MainActor

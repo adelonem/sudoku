@@ -11,7 +11,9 @@ struct KeyboardView: View {
     @State private var showRestartConfirmation = false
     
     var body: some View {
-        if isPortrait {
+        if viewModel.isShowingHint {
+            HintKeyboardView(viewModel: viewModel, isPortrait: isPortrait)
+        } else if isPortrait {
             portraitLayout
         } else {
             landscapeLayout

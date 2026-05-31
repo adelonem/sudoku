@@ -22,6 +22,7 @@ final class PuzzleViewModel {
     private(set) var activeHintChain: [HintResult] = []
     private(set) var activeHintIndex = 0
     private(set) var hintBasePuzzle: Puzzle?
+    private var hintBasePossibilitiesPuzzle: Puzzle?
     private(set) var isAutoCompleting = false
     private(set) var isPuzzleTrivial = false
     private(set) var completedPuzzles: [CompletedPuzzle] = []
@@ -57,16 +58,8 @@ final class PuzzleViewModel {
         activeHintIndex < activeHintChain.count - 1
     }
     
-    var hintAppliedActionCount: Int {
-        activeHintIndex
-    }
-    
-    var hintPreviewPuzzle: Puzzle? {
-        guard let hintBasePuzzle else { return nil }
-        return PuzzleCandidatesBuilder.hintPreview(
-            from: hintBasePuzzle,
-            applying: Array(activeHintChain.prefix(activeHintIndex))
-        )
+    var isOnLastHintStep: Bool {
+        !activeHintChain.isEmpty && activeHintIndex == activeHintChain.count - 1
     }
     
     var canUndo: Bool {
@@ -271,9 +264,12 @@ final class PuzzleViewModel {
             return
         }
         
+        pushUndo()
         hintBasePuzzle = basePuzzle
+        hintBasePossibilitiesPuzzle = possibilitiesPuzzle
         activeHintChain = chain
         activeHintIndex = 0
+        syncHintMutation()
         highlightedDigit = chain[0].digit
         hintCount += 1
         persistState()
@@ -281,6 +277,7 @@ final class PuzzleViewModel {
     
     func clearHint() {
         hintBasePuzzle = nil
+        hintBasePossibilitiesPuzzle = nil
         activeHintChain = []
         activeHintIndex = 0
         
@@ -294,13 +291,138 @@ final class PuzzleViewModel {
     func prevHint() {
         guard canGoPrevHint else { return }
         activeHintIndex -= 1
+        syncHintMutation()
         highlightedDigit = activeHint?.digit
+        persistState()
     }
     
     func nextHint() {
         guard canGoNextHint else { return }
         activeHintIndex += 1
+        syncHintMutation()
         highlightedDigit = activeHint?.digit
+        persistState()
+    }
+    
+    func finishHint() {
+        guard isShowingHint else { return }
+        applyAllHintMutations()
+        clearHint()
+        persistState()
+    }
+    
+    /// Rebuilds the puzzle from the pre-hint base so the player sees:
+    /// - the notes required to make the current technique legible (injected for each
+    ///   hint up to and including the current step), and
+    /// - the eliminations from every hint strictly before the current step.
+    private func syncHintMutation() {
+        guard let hintBasePuzzle else { return }
+        let injectingHints = Array(activeHintChain.prefix(activeHintIndex + 1))
+        let priorEliminations = activeHintChain.prefix(activeHintIndex).flatMap(\.eliminations)
+        puzzle = applyingHintTransform(
+            injecting: injectingHints,
+            removing: priorEliminations,
+            to: hintBasePuzzle
+        )
+        if let hintBasePossibilitiesPuzzle {
+            possibilitiesPuzzle = applyingHintTransform(
+                injecting: injectingHints,
+                removing: priorEliminations,
+                to: hintBasePossibilitiesPuzzle
+            )
+        }
+    }
+    
+    private func applyAllHintMutations() {
+        guard let hintBasePuzzle else { return }
+        let allEliminations = activeHintChain.flatMap(\.eliminations)
+        puzzle = applyingHintTransform(
+            injecting: activeHintChain,
+            removing: allEliminations,
+            to: hintBasePuzzle
+        )
+        if let hintBasePossibilitiesPuzzle {
+            possibilitiesPuzzle = applyingHintTransform(
+                injecting: activeHintChain,
+                removing: allEliminations,
+                to: hintBasePossibilitiesPuzzle
+            )
+        }
+    }
+    
+    private func applyingHintTransform(
+        injecting hints: [HintResult],
+        removing eliminations: [(row: Int, col: Int, digit: Int)],
+        to puzzle: Puzzle
+    ) -> Puzzle {
+        var result = puzzle
+        for hint in hints {
+            result = injectingHintNotes(hint, in: result)
+        }
+        return removingNoteCandidates(eliminations, in: result)
+    }
+    
+    private func injectingHintNotes(_ hint: HintResult, in puzzle: Puzzle) -> Puzzle {
+        let digits = impactedDigits(for: hint)
+        guard !digits.isEmpty else { return puzzle }
+        
+        var keys: Set<Int> = []
+        for cell in hint.primaryCells {
+            keys.insert(cell.row * Puzzle.size + cell.col)
+        }
+        for cell in hint.secondaryCells {
+            keys.insert(cell.row * Puzzle.size + cell.col)
+        }
+        for elimination in hint.eliminations {
+            keys.insert(elimination.row * Puzzle.size + elimination.col)
+        }
+        
+        var cells = puzzle.cells
+        for key in keys {
+            let row = key / Puzzle.size
+            let col = key % Puzzle.size
+            let cell = cells[row][col]
+            
+            guard cell.value == nil else { continue }
+            
+            let validCandidates = PuzzleSolver.candidates(atRow: row, col: col, in: puzzle)
+            let toAdd = digits.intersection(validCandidates)
+            guard !toAdd.isEmpty else { continue }
+            
+            let existing: Set<Int>
+            if case .notes(let notes) = cell {
+                existing = notes
+            } else {
+                existing = []
+            }
+            
+            let merged = existing.union(toAdd)
+            cells[row][col] = .notes(merged)
+        }
+        
+        return Puzzle(cells: cells)
+    }
+    
+    private func impactedDigits(for hint: HintResult) -> Set<Int> {
+        if let digit = hint.digit {
+            return [digit]
+        }
+        return Set(hint.eliminations.map(\.digit))
+    }
+    
+    private func removingNoteCandidates(
+        _ eliminations: [(row: Int, col: Int, digit: Int)],
+        in puzzle: Puzzle
+    ) -> Puzzle {
+        guard !eliminations.isEmpty else { return puzzle }
+        var cells = puzzle.cells
+        for elimination in eliminations {
+            guard case .notes(let existing) = cells[elimination.row][elimination.col] else { continue }
+            var updated = existing
+            updated.remove(elimination.digit)
+            cells[elimination.row][elimination.col] = updated.isEmpty ? .empty : .notes(updated)
+        }
+        return Puzzle(cells: cells)
     }
     
     // MARK: - Editing

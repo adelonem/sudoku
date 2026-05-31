@@ -26,17 +26,6 @@ struct ContentView: View {
         FontOption(rawValue: selectedFontRawValue) ?? .standard
     }
     
-    private var showHintsView: Binding<Bool> {
-        Binding(
-            get: { viewModel.isShowingHint },
-            set: { isPresented in
-                if !isPresented {
-                    viewModel.clearHint()
-                }
-            }
-        )
-    }
-    
     var body: some View {
         GeometryReader { geo in
             let isPortrait = geo.size.width < geo.size.height
@@ -121,12 +110,6 @@ struct ContentView: View {
         }
         .navigationDestination(isPresented: $showTutorial) {
             TutorialView()
-                .tint(customAccentColor)
-                .environment(\.customAccentColor, customAccentColor)
-                .environment(\.customFontOption, fontOption)
-        }
-        .navigationDestination(isPresented: showHintsView) {
-            HintsView(viewModel: viewModel)
                 .tint(customAccentColor)
                 .environment(\.customAccentColor, customAccentColor)
                 .environment(\.customFontOption, fontOption)
