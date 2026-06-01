@@ -650,6 +650,7 @@ final class PuzzleViewModel {
     
     private func persistState() {
         recomputeDigitCounts()
+        advanceSelectedDigitIfExhausted()
         recomputeIsSolved()
         
         guard let puzzleNumber, let puzzleDifficulty else { return }
@@ -720,6 +721,28 @@ final class PuzzleViewModel {
                 }
             }
         }
+    }
+    
+    private func advanceSelectedDigitIfExhausted() {
+        guard let current = selectedDigit, remainingCount(for: current) == 0 else { return }
+        
+        let shouldUpdateHighlight = highlightedDigit == current
+        let next = nextAvailableDigit(after: current)
+        selectedDigit = next
+        if shouldUpdateHighlight {
+            highlightedDigit = next
+        }
+    }
+    
+    private func nextAvailableDigit(after current: Int) -> Int? {
+        var candidate = (current % Puzzle.size) + 1
+        while candidate != current {
+            if remainingCount(for: candidate) > 0 {
+                return candidate
+            }
+            candidate = (candidate % Puzzle.size) + 1
+        }
+        return nil
     }
     
     private func recomputeIsSolved(recordCompletion: Bool = true) {
