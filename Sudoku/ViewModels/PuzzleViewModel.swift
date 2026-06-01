@@ -441,21 +441,17 @@ final class PuzzleViewModel {
             let col = key % Puzzle.size
             let cell = cells[row][col]
             
-            guard cell.value == nil else { continue }
+            // Only fill in notes for cells the player has not curated yet.
+            // Once notes exist, the player's reductions are authoritative: the elimination
+            // step alone is enough to materialize the hint, and re-introducing digits
+            // the player removed on purpose would be misleading.
+            guard case .empty = cell else { continue }
             
             let validCandidates = PuzzleSolver.candidates(atRow: row, col: col, in: puzzle)
             let toAdd = digits.intersection(validCandidates)
             guard !toAdd.isEmpty else { continue }
             
-            let existing: Set<Int>
-            if case .notes(let notes) = cell {
-                existing = notes
-            } else {
-                existing = []
-            }
-            
-            let merged = existing.union(toAdd)
-            cells[row][col] = .notes(merged)
+            cells[row][col] = .notes(toAdd)
         }
         
         return Puzzle(cells: cells)
