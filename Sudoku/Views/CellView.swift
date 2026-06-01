@@ -10,6 +10,7 @@ struct CellView: View {
     let cell: Cell
     let highlightedDigit: Int?
     var invalidNotes: Set<Int> = []
+    var restoredNotes: Set<Int> = []
     var hasConflict: Bool = false
     @Environment(\.customAccentColor) private var accentColor
     @Environment(\.customFontOption) private var fontOption
@@ -33,7 +34,8 @@ struct CellView: View {
             NotesView(
                 notes: cell.notes,
                 highlightedDigit: highlightedDigit,
-                invalidNotes: invalidNotes
+                invalidNotes: invalidNotes,
+                restoredNotes: restoredNotes
             )
             .padding(1)
         }

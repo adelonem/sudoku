@@ -22,6 +22,7 @@ struct PuzzleView: View {
                         let cell = viewModel.cell(row: row, col: col)
                         let highlight = viewModel.highlight(row: row, col: col)
                         let invalid = viewModel.invalidNotes(row: row, col: col)
+                        let restored = viewModel.restoredNotes(row: row, col: col)
                         let conflict = viewModel.hasConflict(atRow: row, col: col)
                         let celebrationDelay = viewModel.celebrationDelay(row: row, col: col)
                         
@@ -34,6 +35,7 @@ struct PuzzleView: View {
                                     cell: cell,
                                     highlightedDigit: viewModel.highlightedDigit,
                                     invalidNotes: invalid,
+                                    restoredNotes: restored,
                                     hasConflict: conflict
                                 )
                             }

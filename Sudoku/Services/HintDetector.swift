@@ -76,10 +76,20 @@ enum HintDetector {
     
     private typealias Pos = (row: Int, col: Int)
     
+    /// Computes candidates for every cell. When a cell is in `.notes` mode, the player's
+    /// pencil marks restrict the candidates to the intersection with the logical set —
+    /// so the detector reasons over the same possibilities the player has on screen.
+    /// Cells without notes keep the full logical candidates.
     private static func computeCandidates(in puzzle: Puzzle) -> [[Set<Int>]] {
         (0..<9).map { row in
             (0..<9).map { col in
-                PuzzleSolver.candidates(atRow: row, col: col, in: puzzle)
+                let logical = PuzzleSolver.candidates(atRow: row, col: col, in: puzzle)
+                let notes = puzzle.cells[row][col].notes
+                if notes.isEmpty { return logical }
+                let restricted = logical.intersection(notes)
+                // Guard against an empty intersection (notes that contradict the logical
+                // constraints) — fall back to logical so the detector doesn't get stuck.
+                return restricted.isEmpty ? logical : restricted
             }
         }
     }

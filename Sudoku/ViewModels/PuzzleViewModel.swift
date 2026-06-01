@@ -23,6 +23,10 @@ final class PuzzleViewModel {
     private(set) var activeHintIndex = 0
     private(set) var hintBasePuzzle: Puzzle?
     private var hintBasePossibilitiesPuzzle: Puzzle?
+    /// Cells whose player notes were missing the solution digit at the moment a hint
+    /// was requested. Maps `row * Puzzle.size + col` to the restored digit. Cleared
+    /// when the hint highlight is dismissed; the digits themselves remain in the notes.
+    private(set) var restoredNoteIndex: [Int: Int] = [:]
     private(set) var isAutoCompleting = false
     private(set) var isPuzzleTrivial = false
     private(set) var completedPuzzles: [CompletedPuzzle] = []
@@ -256,8 +260,13 @@ final class PuzzleViewModel {
             return
         }
         
-        let basePuzzle = puzzle
-        let chain = HintDetector.findHintChain(in: basePuzzle)
+        // Detect on the grid the player is actually editing — whether that's the
+        // classic notes grid or the possibilities grid being reduced.
+        // First, restore any solution digit the player eliminated from notes by mistake,
+        // so the detector reasons over a consistent candidate set and the chain can proceed.
+        let currentRestorations = missingSolutionDigits(in: currentPuzzle)
+        let detectionPuzzle = applyingRestoredNotes(currentRestorations, to: currentPuzzle)
+        let chain = HintDetector.findHintChain(in: detectionPuzzle)
         
         guard !chain.isEmpty else {
             revealSolution()
@@ -265,10 +274,22 @@ final class PuzzleViewModel {
         }
         
         pushUndo()
-        hintBasePuzzle = basePuzzle
+        // Persist the restorations into both grids so the corrections survive a mode toggle
+        // and so the player keeps the fixed notes once the hint chain ends.
+        puzzle = applyingRestoredNotes(missingSolutionDigits(in: puzzle), to: puzzle)
+        possibilitiesPuzzle = applyingRestoredNotes(missingSolutionDigits(in: possibilitiesPuzzle), to: possibilitiesPuzzle)
+        restoredNoteIndex = Dictionary(uniqueKeysWithValues: currentRestorations.map {
+            ($0.row * Puzzle.size + $0.col, $0.digit)
+        })
+        hintBasePuzzle = puzzle
         hintBasePossibilitiesPuzzle = possibilitiesPuzzle
         activeHintChain = chain
         activeHintIndex = 0
+        // Drop the active digit selection so the amber hint highlight is not masked
+        // by the digit-match highlight of the previously selected digit.
+        selectedDigit = nil
+        selectedCol = nil
+        selectedRow = nil
         syncHintMutation()
         highlightedDigit = chain[0].digit
         hintCount += 1
@@ -280,12 +301,49 @@ final class PuzzleViewModel {
         hintBasePossibilitiesPuzzle = nil
         activeHintChain = []
         activeHintIndex = 0
+        restoredNoteIndex = [:]
         
         if let selectedRow, let selectedCol {
             highlightedDigit = currentPuzzle.cells[selectedRow][selectedCol].value ?? selectedDigit
         } else {
             highlightedDigit = selectedDigit
         }
+    }
+    
+    /// Returns the digits in this cell that were restored from a missing-note correction
+    /// at the start of the active hint. Empty once the hint highlight clears.
+    func restoredNotes(row: Int, col: Int) -> Set<Int> {
+        guard let digit = restoredNoteIndex[row * Puzzle.size + col] else { return [] }
+        return [digit]
+    }
+    
+    /// Lists `(row, col, digit)` triples for cells whose notes exclude the puzzle's
+    /// solution digit. Empty when no solution is known or the notes are consistent.
+    private func missingSolutionDigits(in puzzle: Puzzle) -> [(row: Int, col: Int, digit: Int)] {
+        guard let solution else { return [] }
+        var result: [(row: Int, col: Int, digit: Int)] = []
+        for row in 0..<Puzzle.size {
+            for col in 0..<Puzzle.size {
+                guard case .notes(let notes) = puzzle.cells[row][col], !notes.isEmpty else { continue }
+                let solutionDigit = solution[row * Puzzle.size + col]
+                if !notes.contains(solutionDigit) {
+                    result.append((row, col, solutionDigit))
+                }
+            }
+        }
+        return result
+    }
+    
+    private func applyingRestoredNotes(_ restorations: [(row: Int, col: Int, digit: Int)], to puzzle: Puzzle) -> Puzzle {
+        guard !restorations.isEmpty else { return puzzle }
+        var cells = puzzle.cells
+        for r in restorations {
+            guard case .notes(let notes) = cells[r.row][r.col] else { continue }
+            var updated = notes
+            updated.insert(r.digit)
+            cells[r.row][r.col] = .notes(updated)
+        }
+        return Puzzle(cells: cells)
     }
     
     func prevHint() {

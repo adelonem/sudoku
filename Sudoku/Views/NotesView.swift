@@ -10,6 +10,7 @@ struct NotesView: View {
     let notes: Set<Int>
     let highlightedDigit: Int?
     var invalidNotes: Set<Int> = []
+    var restoredNotes: Set<Int> = []
     @Environment(\.customAccentColor) private var accentColor
     @Environment(\.customFontOption) private var fontOption
     
@@ -21,14 +22,17 @@ struct NotesView: View {
                         let number = row * Puzzle.blockSize + col + 1
                         let isPresent = notes.contains(number)
                         let isInvalid = isPresent && invalidNotes.contains(number)
+                        let isRestored = isPresent && restoredNotes.contains(number)
                         let isHighlighted = highlightedDigit == number && isPresent
                         Text(isPresent ? "\(number)" : " ")
                             .font(fontOption.font(size: Style.noteFontSize))
                             .minimumScaleFactor(0.01)
                             .lineLimit(1)
-                            .fontWeight(isHighlighted ? .bold : .regular)
+                            .fontWeight(isHighlighted || isRestored ? .bold : .regular)
                             .foregroundStyle(
-                                isHighlighted
+                                isRestored
+                                ? Color.orange
+                                : isHighlighted
                                 ? accentColor
                                 : Color.secondary
                             )
