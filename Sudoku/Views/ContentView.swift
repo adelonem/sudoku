@@ -69,8 +69,8 @@ struct ContentView: View {
         }
         .overlay {
             if viewModel.isSolved {
-                VictoryView(viewModel: viewModel) {
-                    viewModel.newGame()
+                VictoryView {
+                    showNewGame = true
                 }
             }
         }

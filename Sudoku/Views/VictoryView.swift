@@ -6,7 +6,6 @@
 import SwiftUI
 
 struct VictoryView: View {
-    var viewModel: PuzzleViewModel
     var onNewGame: () -> Void
     @Environment(\.customFontOption) private var fontOption
     @State private var appeared = false
@@ -33,7 +32,7 @@ struct VictoryView: View {
                 Button {
                     onNewGame()
                 } label: {
-                    Label("New Random Puzzle", systemImage: "arrow.trianglehead.2.counterclockwise")
+                    Label("New Puzzle", systemImage: "arrow.trianglehead.2.counterclockwise")
                         .font(fontOption.font(for: .title3).bold())
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -57,5 +56,5 @@ struct VictoryView: View {
 }
 
 #Preview {
-    VictoryView(viewModel: PuzzleViewModel(puzzle: .sample), onNewGame: {})
+    VictoryView(onNewGame: {})
 }
