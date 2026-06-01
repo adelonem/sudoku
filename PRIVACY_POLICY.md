@@ -68,13 +68,7 @@ Puisque **Art of Sudoku** ne collecte ni ne transmet de données personnelles à
 
 Si une future version de l'application venait à collecter ou traiter des données personnelles, cette politique serait mise à jour avant ou au moment du déploiement de ces changements.
 
-## 8. Contact
-
-Pour toute question relative à cette politique de confidentialité, vous pouvez contacter l'éditeur de l'application à l'adresse suivante :
-
-`260121592+adelonem@users.noreply.github.com`
-
-## 9. Modifications
+## 8. Modifications
 
 Cette politique de confidentialité peut être mise à jour afin de refléter les évolutions de l'application, des obligations légales ou des exigences de distribution sur les plateformes applicatives.
 
