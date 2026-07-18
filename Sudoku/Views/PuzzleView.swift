@@ -91,6 +91,14 @@ struct PuzzleView: View {
             BlockGridOverlayView()
                 .allowsHitTesting(false)
         }
+        .overlay {
+            if let hint = viewModel.activeHint, hint.chainCells.count >= 2,
+               !viewModel.isHintChainArrowsHidden {
+                HintChainArrowsView(chain: hint.chainCells, color: accentColor)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: viewModel.isHintChainArrowsHidden)
     }
 }
 

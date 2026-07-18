@@ -21,6 +21,9 @@ final class PuzzleViewModel {
     private(set) var celebrationDelays: [Int: Double] = [:]
     private(set) var activeHintChain: [HintResult] = []
     private(set) var activeHintIndex = 0
+    /// When true, the chain arrows overlay is temporarily hidden so the player can read
+    /// the grid underneath. Toggled from the hint info card; reset on every hint change.
+    private(set) var isHintChainArrowsHidden = false
     private(set) var hintBasePuzzle: Puzzle?
     private var hintBasePossibilitiesPuzzle: Puzzle?
     /// Cells whose player notes were missing the solution digit at the moment a hint
@@ -296,11 +299,19 @@ final class PuzzleViewModel {
         persistState()
     }
     
+    /// Shows or hides the chain arrows overlay while a hint is displayed, letting the
+    /// player inspect the grid underneath the arrows.
+    func toggleHintChainArrows() {
+        guard isShowingHint else { return }
+        isHintChainArrowsHidden.toggle()
+    }
+    
     func clearHint() {
         hintBasePuzzle = nil
         hintBasePossibilitiesPuzzle = nil
         activeHintChain = []
         activeHintIndex = 0
+        isHintChainArrowsHidden = false
         restoredNoteIndex = [:]
         
         if let selectedRow, let selectedCol {
@@ -349,6 +360,7 @@ final class PuzzleViewModel {
     func prevHint() {
         guard canGoPrevHint else { return }
         activeHintIndex -= 1
+        isHintChainArrowsHidden = false
         syncHintMutation()
         highlightedDigit = activeHint?.digit
         persistState()
@@ -357,6 +369,7 @@ final class PuzzleViewModel {
     func nextHint() {
         guard canGoNextHint else { return }
         activeHintIndex += 1
+        isHintChainArrowsHidden = false
         syncHintMutation()
         highlightedDigit = activeHint?.digit
         persistState()

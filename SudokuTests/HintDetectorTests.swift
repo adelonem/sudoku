@@ -190,6 +190,11 @@ struct HintDetectorTests {
         #expect(contradictionStep.eliminations[0].row == 1)
         #expect(contradictionStep.eliminations[0].col == 6)
         #expect(contradictionStep.eliminations[0].digit == 3)
+        // The chain is drawn with arrows: it must start at the pivot (the assumed cell)
+        // and list at least one forced cell leading to the contradiction.
+        #expect(contradictionStep.chainCells.count >= 2)
+        #expect(contradictionStep.chainCells.first?.row == 1)
+        #expect(contradictionStep.chainCells.first?.col == 6)
         
         #expect(placementStep.technique == .nakedSingles)
         #expect(placementStep.digit == 7)

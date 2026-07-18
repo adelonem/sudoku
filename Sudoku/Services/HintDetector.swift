@@ -151,6 +151,31 @@ enum HintDetector {
         return result
     }
     
+    /// Reconstructs the shortest path between two nodes in an undirected adjacency graph
+    /// via breadth-first search. Returns the ordered node list including both endpoints,
+    /// or an empty array when the goal is unreachable. Used to turn the conjugate-link
+    /// graphs of coloring / AIC into a readable ordered chain of cells.
+    private static func shortestPath(from start: Int, to goal: Int, in adj: [Int: Set<Int>]) -> [Int] {
+        if start == goal { return [start] }
+        var parent: [Int: Int] = [start: start]
+        var queue = [start]
+        var qi = 0
+        while qi < queue.count {
+            let node = queue[qi]; qi += 1
+            for nb in adj[node, default: []] where parent[nb] == nil {
+                parent[nb] = node
+                if nb == goal {
+                    var path = [goal]
+                    var cur = goal
+                    while cur != start { cur = parent[cur]!; path.append(cur) }
+                    return path.reversed()
+                }
+                queue.append(nb)
+            }
+        }
+        return []
+    }
+    
     private static func seesEachOther(_ a: Pos, _ b: Pos) -> Bool {
         guard a.row != b.row || a.col != b.col else { return false }
         if a.row == b.row || a.col == b.col { return true }
@@ -165,7 +190,8 @@ enum HintDetector {
         _ technique: SudokuTechnique, digit: Int?,
         primary: [Pos], secondary: [Pos],
         explanation: String, reasoning: [String] = [],
-        eliminations: [(row: Int, col: Int, digit: Int)]? = nil
+        eliminations: [(row: Int, col: Int, digit: Int)]? = nil,
+        chain: [Pos] = []
     ) -> HintResult {
         let elims: [(row: Int, col: Int, digit: Int)]
         if let e = eliminations {
@@ -182,7 +208,8 @@ enum HintDetector {
             title: technique.title,
             explanation: explanation,
             reasoning: reasoning,
-            eliminations: elims
+            eliminations: elims,
+            chainCells: chain.map { (row: $0.row, col: $0.col) }
         )
     }
     
@@ -645,6 +672,11 @@ enum HintDetector {
                 secondary.append(p)
             }}
             guard !secondary.isEmpty else { continue }
+            // Chain order: roof → base (shared line) → base → roof, following the
+            // strong link inside each line and the weak link across the shared line.
+            let base1: Pos = byRow ? (l1.idx, sharedPos) : (sharedPos, l1.idx)
+            let base2: Pos = byRow ? (l2.idx, sharedPos) : (sharedPos, l2.idx)
+            let chain: [Pos] = [nsp1, base1, base2, nsp2]
             let reasoning: [String] = [
                 String(localized: "\(digit) appears twice in \(lineLabel(l1.idx, byRow: byRow)) and \(lineLabel(l2.idx, byRow: byRow)), sharing \(coverLabel(sharedPos, byRow: byRow))."),
                 String(localized: "That leaves the two roof cells \(cellLabel(nsp1)) and \(cellLabel(nsp2)) as the only non-shared options for \(digit)."),
@@ -653,7 +685,7 @@ enum HintDetector {
             ]
             return makeHint(.skyscraper, digit: digit, primary: primary, secondary: secondary,
                             explanation: String(localized: "Skyscraper on \(digit): the two roof cells force \(digit) into one of them, so any cell seeing both roofs loses \(digit)."),
-                            reasoning: reasoning)
+                            reasoning: reasoning, chain: chain)
         }
         return nil
     }
@@ -693,6 +725,11 @@ enum HintDetector {
                 for combo in combinations(pos, 2) {
                     guard seesEachOther(combo[0], combo[1]) else { continue }
                     let other = (grp == grp0 ? grp1 : grp0).map { Pos(row: $0/9, col: $0%9) }
+                    // The chain to follow is the conjugate path linking the two same-color
+                    // cells that end up seeing each other.
+                    let chain = shortestPath(from: combo[0].row*9 + combo[0].col,
+                                             to: combo[1].row*9 + combo[1].col, in: adj)
+                        .map { Pos(row: $0/9, col: $0%9) }
                     let reasoning: [String] = [
                         String(localized: "Color the conjugate chain for \(digit) with two alternating colors."),
                         String(localized: "The same color appears in two cells that see each other: \(cellList(pos))."),
@@ -701,7 +738,7 @@ enum HintDetector {
                     ]
                     return makeHint(.simpleColoring, digit: digit, primary: other, secondary: pos,
                                     explanation: String(localized: "Simple Coloring on \(digit): one color contradicts itself, so every candidate of that color can be removed."),
-                                    reasoning: reasoning)
+                                    reasoning: reasoning, chain: chain)
                 }
             }
             let pos0 = grp0.map { Pos(row: $0/9, col: $0%9) }
@@ -715,6 +752,16 @@ enum HintDetector {
                 }
             }}
             if !secondary.isEmpty {
+                // Follow the conjugate path between the two opposite-color candidates that
+                // an eliminated cell can see, so the player can read why it is squeezed out.
+                var chain: [Pos] = []
+                if let target = secondary.first,
+                   let endA = pos0.first(where: { seesEachOther($0, target) }),
+                   let endB = pos1.first(where: { seesEachOther($0, target) }) {
+                    chain = shortestPath(from: endA.row*9 + endA.col,
+                                         to: endB.row*9 + endB.col, in: adj)
+                    .map { Pos(row: $0/9, col: $0%9) }
+                }
                 let reasoning: [String] = [
                     String(localized: "Color the chain for \(digit) across the highlighted candidates."),
                     String(localized: "One of the two colors must contain the true \(digit)."),
@@ -723,7 +770,7 @@ enum HintDetector {
                 ]
                 return makeHint(.simpleColoring, digit: digit, primary: pos0 + pos1, secondary: secondary,
                                 explanation: String(localized: "Simple Coloring on \(digit): any cell that sees both colors cannot contain \(digit)."),
-                                reasoning: reasoning)
+                                reasoning: reasoning, chain: chain)
             }
         }
         return nil
@@ -925,6 +972,13 @@ enum HintDetector {
                             let cell = node / 10
                             return (row: cell / 9, col: cell % 9, digit: node % 10)
                         }
+                        // The chain to follow is the alternating path between the two nodes
+                        // whose shared color produces the contradiction.
+                        let chain = uniquePositions(
+                            shortestPath(from: n0, to: n1, in: adj).map {
+                                Pos(row: ($0 / 10) / 9, col: ($0 / 10) % 9)
+                            }
+                        )
                         let reasoning: [String] = [
                             String(localized: "Build the alternating chain from strong and weak links."),
                             String(localized: "One color causes a contradiction: \(contradictionDescription)."),
@@ -934,7 +988,8 @@ enum HintDetector {
                         return makeHint(.aic, digit: nil, primary: other, secondary: elim,
                                         explanation: String(localized: "Alternating Inference Chain: one color contradicts itself, so the opposite color is forced."),
                                         reasoning: reasoning,
-                                        eliminations: eliminations)
+                                        eliminations: eliminations,
+                                        chain: chain)
                     }
                 }
             }
@@ -953,6 +1008,18 @@ enum HintDetector {
                     }
                 }}
                 if !secondary.isEmpty {
+                    // Follow the alternating path between the two opposite-color candidates
+                    // for `digit` that the eliminated cell can see.
+                    var chain: [Pos] = []
+                    if let target = secondary.first,
+                       let endA = c0n.first(where: { seesEachOther(Pos(row: ($0/10)/9, col: ($0/10)%9), target) }),
+                       let endB = c1n.first(where: { seesEachOther(Pos(row: ($0/10)/9, col: ($0/10)%9), target) }) {
+                        chain = uniquePositions(
+                            shortestPath(from: endA, to: endB, in: adj).map {
+                                Pos(row: ($0 / 10) / 9, col: ($0 / 10) % 9)
+                            }
+                        )
+                    }
                     let reasoning: [String] = [
                         String(localized: "Color the alternating chain for digit \(digit)."),
                         String(localized: "One color must contain the true \(digit) somewhere on the chain."),
@@ -961,7 +1028,7 @@ enum HintDetector {
                     ]
                     return makeHint(.aic, digit: digit, primary: pos0 + pos1, secondary: secondary,
                                     explanation: String(localized: "Alternating Inference Chain on \(digit): any cell that sees both colors cannot keep \(digit)."),
-                                    reasoning: reasoning)
+                                    reasoning: reasoning, chain: chain)
                 }
             }
         }
@@ -999,6 +1066,12 @@ enum HintDetector {
                         let secondary = Array(valid.flatMap { $0.placements.map(\.0) }.filter {
                             ($0.row != pos.row || $0.col != pos.col) && ($0.row != pivot.row || $0.col != pivot.col)
                         }.prefix(6))
+                        // Show one branch as an ordered chain: from the pivot through the
+                        // cells it forces, up to the shared conclusion.
+                        let branchChain = valid[0].placements
+                        let stopIndex = branchChain.firstIndex { $0.0.row == pos.row && $0.0.col == pos.col }
+                        ?? (branchChain.count - 1)
+                        let chain = Array(branchChain.prefix(stopIndex + 1)).map(\.0)
                         let reasoning: [String] = [
                             String(localized: "Try each candidate at row \(pivot.row + 1), column \(pivot.col + 1)."),
                             String(localized: "Every valid branch forces \(digit) at row \(pos.row + 1), column \(pos.col + 1)."),
@@ -1011,7 +1084,8 @@ enum HintDetector {
                             secondary: secondary,
                             explanation: String(localized: "Forcing Chains: whatever the value at row \(pivot.row+1), column \(pivot.col+1), row \(pos.row+1), column \(pos.col+1) is always \(digit)."),
                             reasoning: reasoning,
-                            eliminations: []
+                            eliminations: [],
+                            chain: chain
                         )
                     }
                 }
@@ -1023,6 +1097,9 @@ enum HintDetector {
                 guard j < pivotCands.count && !contradictions[j] else { continue }
                 let eliminatedDigit = pivotCands[i]
                 let contradictionCells = branches[i].placements.dropFirst().map(\.0)
+                // Ordered chain: the pivot (the assumption) followed by every cell it
+                // forces, up to the placement that makes the grid impossible.
+                let chain = branches[i].placements.map(\.0)
                 let reasoning = forcingContradictionReasoning(
                     pivot: pivot,
                     assumedDigit: eliminatedDigit,
@@ -1035,7 +1112,8 @@ enum HintDetector {
                     secondary: [pivot],
                     explanation: String(localized: "Forcing Chains: assuming \(eliminatedDigit) at row \(pivot.row+1), column \(pivot.col+1) leads to a contradiction, so \(eliminatedDigit) can be eliminated from this cell."),
                     reasoning: reasoning,
-                    eliminations: [(row: pivot.row, col: pivot.col, digit: eliminatedDigit)]
+                    eliminations: [(row: pivot.row, col: pivot.col, digit: eliminatedDigit)],
+                    chain: chain
                 )
                 break
             }

@@ -20,4 +20,9 @@ struct HintResult {
     let reasoning: [String]
     /// Which (row, col, digit) tuples this hint eliminates — used for chain detection.
     let eliminations: [(row: Int, col: Int, digit: Int)]
+    /// Ordered cells forming the logical chain, for techniques where the player must
+    /// follow a sequence of linked cells (forcing chains, skyscraper, coloring, AIC).
+    /// Arrows are drawn between consecutive cells to show the reading order.
+    /// Empty for techniques that are not chain-based.
+    let chainCells: [(row: Int, col: Int)]
 }

@@ -130,21 +130,40 @@ struct HintKeyboardView: View {
                             .multilineTextAlignment(.center)
                             .minimumScaleFactor(0.5)
                             .lineLimit(2)
-                        
+
                         Text(impactedDigitsText(for: hint))
                             .font(fontOption.font(for: .subheadline).monospacedDigit())
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .minimumScaleFactor(0.5)
                             .lineLimit(1)
-                        
+
                         Text("\(viewModel.activeHintIndex + 1) / \(viewModel.activeHintChain.count)")
                             .font(fontOption.font(for: .caption).monospacedDigit())
                             .foregroundStyle(.secondary)
+
+                        if hasChainArrows {
+                            Image(systemName: viewModel.isHintChainArrowsHidden
+                                  ? "eye.slash"
+                                  : "eye")
+                                .font(fontOption.font(for: .caption))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.horizontal, 8)
                 }
             }
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .onTapGesture {
+                viewModel.toggleHintChainArrows()
+            }
+            .accessibilityAddTraits(hasChainArrows ? .isButton : [])
+            .accessibilityLabel(viewModel.isHintChainArrowsHidden ? "Show chain arrows" : "Hide chain arrows")
+    }
+
+    /// Whether the active hint draws chain arrows that the info card can toggle.
+    private var hasChainArrows: Bool {
+        (viewModel.activeHint?.chainCells.count ?? 0) >= 2
     }
     
     private func impactedDigitsText(for hint: HintResult) -> String {
